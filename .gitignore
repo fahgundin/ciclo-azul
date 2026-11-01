@@ -2,10 +2,19 @@
 _prd_export/
 *.zip
 
-# Dependências e builds (projetos futuros)
+# Dependências e builds (Node/TS)
 node_modules/
 dist/
 build/
+coverage/
+*.tsbuildinfo
+.pnpm-store/
+
+# Caches de ferramentas
+.eslintcache
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
 
 # Ambiente
 .env
@@ -22,3 +31,6 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+
+# Python build artifacts
+*.egg-info/
