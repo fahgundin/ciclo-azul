@@ -56,7 +56,24 @@ Tipos: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `build`, `ci`.
 - **Identificadores em inglês**; documentação e comentários de negócio em português.
 - **TypeScript:** ESLint + Prettier; tipagem estrita, evite `any`.
 - **Python:** black/ruff; type hints quando possível.
-- Escreva **testes** para regras de negócio e casos de uso.
+
+## Testes são obrigatórios
+
+**Este repositório é dirigido a testes.** Não há exceção para código de
+comportamento.
+
+- Toda funcionalidade ou correção com código de comportamento (regras de negócio,
+  casos de uso, endpoints, adapters, lógica de frontend) **vem com testes no mesmo
+  PR**.
+- **Não abra PR com a suíte quebrada.** Build e testes precisam estar verdes
+  localmente antes do PR.
+- Correção de bug inclui um teste que reproduz o bug.
+- Valide payloads externos (MQTT, HTTP, formulários) com casos válidos e inválidos.
+- Mudanças sem impacto em comportamento (docs, formatação) não exigem novos testes,
+  mas não podem quebrar os existentes.
+
+O domínio (Clean + Hexagonal) é testável sem banco nem broker — aproveite isso para
+testes rápidos e isolados.
 
 ## Arquitetura (resumo)
 
