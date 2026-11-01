@@ -33,6 +33,9 @@
   seção 7 de `docs/contrato-iot.md`.
 - **NÃO** adicione dependências com versões abertas; **fixe versões**. Prefira
   bibliotecas conhecidas e mantidas.
+- **NÃO** abra PR sem testes para o código de comportamento adicionado/alterado,
+  nem com a suíte de testes quebrada. **Testes são obrigatórios neste repositório**
+  (ver seção 8).
 
 ## 2. Regras obrigatórias (FAÇA)
 
@@ -90,3 +93,22 @@ Não inicie um requisito cujas dependências ainda não estejam prontas.
   **pare e proponha um novo ADR** em vez de improvisar.
 - Se faltar informação (regra de negócio, valor, prazo), **registre a pendência**
   (ex.: nos "pontos a confirmar" dos docs) em vez de inventar valores.
+
+## 8. Testes (obrigatórios)
+
+> **Este é um repositório dirigido a testes. Testes não são opcionais.**
+
+- **Todo código de comportamento** (regras de negócio, casos de uso, endpoints,
+  adapters, lógica de frontend) **deve vir acompanhado de testes automatizados**
+  no mesmo PR.
+- **Nenhum PR é aberto com a suíte de testes quebrada.** Build e testes precisam
+  estar verdes localmente antes de abrir o PR.
+- **Correção de bug** exige um teste que reproduz o bug (e passa após a correção).
+- A cobertura deve focar nas regras de negócio e casos de uso do domínio; prefira
+  testes rápidos e isolados (o domínio hexagonal é testável sem banco/broker).
+- Validação de payloads externos (MQTT, HTTP, formulários) deve ter testes de
+  casos válidos **e** inválidos.
+- Mudanças que não alteram comportamento (ex.: `docs`, ajustes de formatação) estão
+  dispensadas de novos testes, mas **não podem** quebrar a suíte existente.
+- Pipelines de CI executarão a suíte a cada push/PR quando forem configurados; a
+  ausência de CI **não** dispensa a obrigação de escrever e rodar testes.
