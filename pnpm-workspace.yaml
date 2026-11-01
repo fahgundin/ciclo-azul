@@ -1,0 +1,9 @@
+packages:
+  - "backend"
+  - "frontend"
+  - "packages/*"
+
+# Builds de dependencias explicitamente permitidos (evita prompt no pnpm install).
+allowBuilds:
+  "@nestjs/core": true
+  esbuild: true
