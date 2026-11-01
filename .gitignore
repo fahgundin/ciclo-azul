@@ -1,0 +1,24 @@
+# Export bruto do Notion (não versionar)
+_prd_export/
+*.zip
+
+# Dependências e builds (projetos futuros)
+node_modules/
+dist/
+build/
+
+# Ambiente
+.env
+.env.*
+!.env.example
+
+# Python (mock de sensores)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Sistema / editor
+.DS_Store
+.idea/
+.vscode/
