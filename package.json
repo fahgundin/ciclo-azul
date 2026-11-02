@@ -4,8 +4,8 @@
   "private": true,
   "description": "Monitoramento de consumo de agua e rastreamento de residuos em data centers (ODS 6)",
   "engines": {
-    "node": ">=20",
-    "pnpm": ">=9"
+    "node": ">=22.13",
+    "pnpm": ">=11"
   },
   "packageManager": "pnpm@11.26.0",
   "scripts": {
