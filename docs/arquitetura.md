@@ -165,12 +165,13 @@ a terceiros**, e é garantido por:
 
 ## 7. Ambiente de desenvolvimento
 
-`docker-compose` sobe o conjunto local:
+`docker-compose` sobe os servicos de apoio locais:
 
-- **backend** (NestJS)
-- **db** (PostgreSQL)
-- **mqtt** (broker Mosquitto/EMQX)
-- **keycloak** (+ seu banco)
-- **mock-sensors** (Python) — opcional, publicando no broker
+- **db** (PostgreSQL) — banco da aplicacao
+- **mqtt** (broker Mosquitto)
+- **keycloak** (+ seu proprio banco `keycloak-db`)
+- **mock-sensors** (Python) — opcional (profile `mock`), publicando no broker
 
-O frontend roda em dev server apontando para o backend local.
+O **backend** (NestJS) e o **frontend** (React) rodam fora do compose em dev,
+apontando para esses servicos. Instrucoes de subir/derrubar em
+[`infra/README.md`](../infra/README.md).
