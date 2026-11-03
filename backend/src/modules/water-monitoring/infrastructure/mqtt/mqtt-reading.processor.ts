@@ -1,5 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { RegisterWaterReading } from '../../application/register-water-reading.use-case';
+import {
+  READING_PUBLISHER,
+  type ReadingPublisher,
+} from '../../application/reading-publisher';
 import { validateReadingPayload } from './reading-payload.validator';
 import { ReadingDeduplicator } from './reading-deduplicator';
 
@@ -22,6 +26,8 @@ export class MqttReadingProcessor {
   constructor(
     private readonly registerWaterReading: RegisterWaterReading,
     private readonly deduplicator: ReadingDeduplicator,
+    @Inject(READING_PUBLISHER)
+    private readonly publisher: ReadingPublisher,
   ) {}
 
   async process(rawMessage: string | Buffer): Promise<IngestionOutcome> {
@@ -49,6 +55,13 @@ export class MqttReadingProcessor {
         sensorId: reading.sensorId,
         unitId: reading.unitId,
         timestamp: new Date(reading.timestamp),
+        valueInLiters: reading.value,
+        readingType: reading.readingType,
+      });
+      this.publisher.publish({
+        unitId: reading.unitId,
+        sensorId: reading.sensorId,
+        timestamp: reading.timestamp,
         valueInLiters: reading.value,
         readingType: reading.readingType,
       });

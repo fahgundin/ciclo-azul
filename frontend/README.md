@@ -10,8 +10,9 @@ src/
   core/        # logica agnostica de plataforma (reutilizavel, inclusive em RN)
     api/       # cliente HTTP
     auth/      # OIDC (authorization code + PKCE) desacoplado da UI
+    realtime/  # cliente WebSocket (leituras em tempo real)
     domain/    # modelos de apresentacao
-    (realtime/ hooks/ chegam nas proximas issues)
+    (hooks/ chega nas proximas issues)
   ui/          # componentes e paginas especificos da web
   main.tsx     # entrada
 ```
