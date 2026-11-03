@@ -56,5 +56,5 @@ pnpm --filter @ciclo-azul/backend lint
 
 - F2: adapter Postgres (TypeORM) substituindo o repositorio in-memory.
 - ~~F3: guard global de autenticacao (Keycloak/OIDC) + RBAC; `/health` publico.~~ **Concluido.**
-- F4: adapter de entrada MQTT alimentando `RegisterWaterReading`.
+- ~~F4: adapter de entrada MQTT alimentando `RegisterWaterReading`.~~ **Concluido.**
 - F5: gateway WebSocket emitindo atualizacoes ao frontend.

@@ -153,6 +153,9 @@ while True:
 
 ## 8. Pontos a confirmar
 
-- Tratamento de `unitId` desconhecido (descartar vs registrar como órfã).
+- Tratamento de `unitId` desconhecido: **decisao de MVP (F4)** — como ainda nao ha
+  cadastro de unidades, o backend **aceita qualquer `unitId`** e registra a leitura.
+  Revisar quando o cadastro de unidades existir (validar contra unidades conhecidas
+  ou marcar como "orfa").
 - Necessidade real dos tópicos de `status`/LWT no MVP.
 - Autenticação do sensor no broker (usuário/senha ou TLS/mTLS) para produção.
