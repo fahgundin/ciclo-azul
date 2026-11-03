@@ -20,10 +20,24 @@ src/
   modules/
     water-monitoring/           # R04/R05 (exemplo de modulo hexagonal)
       domain/                   # entidades + ports (sem framework/infra)
-      application/              # casos de uso
-      infrastructure/           # adapters (in-memory por ora; Postgres na F2)
+      application/              # casos de uso + port ReadingPublisher
+      infrastructure/
+        mqtt/                   # ingestao: subscriber, validacao, dedup, processor
+        ws/                     # gateway WebSocket (tempo real, implementa o port)
+        in-memory-...           # repo in-memory (Postgres na F2)
       water-monitoring.module.ts
 ```
+
+### Fluxo de ingestao e tempo real
+
+```
+sensor/mock --MQTT--> MqttReadingSubscriber -> MqttReadingProcessor
+  -> (valida + deduplica) -> RegisterWaterReading (persiste)
+  -> ReadingPublisher (port) -> WaterMonitoringGateway --WS--> frontend (por unidade)
+```
+
+O gateway autentica o cliente no handshake (token OIDC) e emite o evento `reading`
+apenas para a room `unit:<unitId>` assinada pelo cliente.
 
 ### Autenticacao e autorizacao
 
@@ -57,4 +71,4 @@ pnpm --filter @ciclo-azul/backend lint
 - F2: adapter Postgres (TypeORM) substituindo o repositorio in-memory.
 - ~~F3: guard global de autenticacao (Keycloak/OIDC) + RBAC; `/health` publico.~~ **Concluido.**
 - ~~F4: adapter de entrada MQTT alimentando `RegisterWaterReading`.~~ **Concluido.**
-- F5: gateway WebSocket emitindo atualizacoes ao frontend.
+- ~~F5: gateway WebSocket emitindo atualizacoes ao frontend.~~ **Concluido.**

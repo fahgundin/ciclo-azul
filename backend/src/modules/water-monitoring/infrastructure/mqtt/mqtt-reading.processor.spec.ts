@@ -19,13 +19,16 @@ function validJson(overrides: Record<string, unknown> = {}): string {
 
 describe('MqttReadingProcessor', () => {
   let register: { execute: jest.Mock };
+  let publisher: { publish: jest.Mock };
   let processor: MqttReadingProcessor;
 
   beforeEach(() => {
     register = { execute: jest.fn().mockResolvedValue(undefined) };
+    publisher = { publish: jest.fn() };
     processor = new MqttReadingProcessor(
       register as unknown as RegisterWaterReading,
       new ReadingDeduplicator(),
+      publisher,
     );
   });
 
@@ -33,6 +36,19 @@ describe('MqttReadingProcessor', () => {
     const outcome = await processor.process(validJson());
     expect(outcome).toBe('registered');
     expect(register.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('publica o evento de tempo real apos registrar', async () => {
+    await processor.process(validJson({ sequence: 123, unitId: 'u-x' }));
+    expect(publisher.publish).toHaveBeenCalledTimes(1);
+    expect(publisher.publish).toHaveBeenCalledWith(
+      expect.objectContaining({ unitId: 'u-x', readingType: 'sensor' }),
+    );
+  });
+
+  it('nao publica quando o payload e invalido', async () => {
+    await processor.process(validJson({ value: -5 }));
+    expect(publisher.publish).not.toHaveBeenCalled();
   });
 
   it('ignora JSON malformado sem lancar', async () => {
