@@ -1,0 +1,32 @@
+{
+  "realm": "ciclo-azul",
+  "enabled": true,
+  "displayName": "Ciclo Azul",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "roles": {
+    "realm": [
+      { "name": "administrador", "description": "Administrador: configuracao e acesso ao sistema" },
+      { "name": "gestor-ambiental", "description": "Gestor Ambiental: conformidade e destinacao de agua/residuos" },
+      { "name": "operador", "description": "Operador: infraestrutura do data center (refrigeracao/facilities)" },
+      { "name": "diretoria", "description": "Diretoria: resultados e prestacao de contas" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "ciclo-azul-web",
+      "name": "Ciclo Azul Web (PWA)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:5173/*"],
+      "webOrigins": ["http://localhost:5173"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/*"
+      }
+    }
+  ]
+}

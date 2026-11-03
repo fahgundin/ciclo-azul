@@ -56,6 +56,9 @@ docker compose down -v
   saudavel (`depends_on: condition: service_healthy`).
 - O broker aceita **conexoes anonimas** (apenas dev). Em producao, autenticacao do
   sensor e obrigatoria — ver `docs/contrato-iot.md`, secao 8.
-- A criacao do realm, client e roles do Keycloak e a configuracao de auth no
-  backend fazem parte da **F3** (issue #3).
+- O Keycloak importa automaticamente o realm versionado
+  `infra/keycloak/realm-ciclo-azul.json` (`start-dev --import-realm`), com o client
+  `ciclo-azul-web` e os 4 roles (administrador, gestor-ambiental, operador,
+  diretoria). A integracao de auth no backend (guard global + RBAC) faz parte da
+  **F3** (issue #3), ja implementada.
 - `.env` **nunca** e versionado. Apenas `.env.example`.
