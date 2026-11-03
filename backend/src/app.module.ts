@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { HealthController } from './health/health.controller';
+import { AuthModule } from './auth/auth.module';
 import { WaterMonitoringModule } from './modules/water-monitoring/water-monitoring.module';
 
 /**
@@ -7,7 +8,7 @@ import { WaterMonitoringModule } from './modules/water-monitoring/water-monitori
  * Novos modulos seguem a estrutura domain/ application/ infrastructure/.
  */
 @Module({
-  imports: [WaterMonitoringModule],
+  imports: [AuthModule, WaterMonitoringModule],
   controllers: [HealthController],
 })
 export class AppModule {}

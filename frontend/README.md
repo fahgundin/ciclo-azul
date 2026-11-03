@@ -9,8 +9,9 @@ reutilizavel e UI de plataforma. Ver `docs/decisoes/0005-pwa-frontend-desacoplad
 src/
   core/        # logica agnostica de plataforma (reutilizavel, inclusive em RN)
     api/       # cliente HTTP
+    auth/      # OIDC (authorization code + PKCE) desacoplado da UI
     domain/    # modelos de apresentacao
-    (realtime/ auth/ hooks/ chegam nas proximas issues)
+    (realtime/ hooks/ chegam nas proximas issues)
   ui/          # componentes e paginas especificos da web
   main.tsx     # entrada
 ```
