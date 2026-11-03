@@ -1,0 +1,100 @@
+# Ambiente de desenvolvimento do Ciclo Azul.
+# Sobe os servicos de apoio locais: banco da aplicacao, broker MQTT, Keycloak (+ banco).
+# O backend (NestJS) e o frontend (React) rodam fora do compose em dev (ver READMEs).
+#
+# Uso:
+#   cp .env.example .env
+#   docker compose up -d                      # sobe db, mqtt e keycloak
+#   docker compose --profile mock up -d        # inclui o mock de sensores
+#   docker compose down                        # derruba (mantem volumes)
+#   docker compose down -v                     # derruba e apaga os dados
+
+services:
+  # Banco de dados da aplicacao.
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Broker MQTT (ingestao das leituras dos sensores).
+  mqtt:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      - "${MQTT_PORT:-1883}:1883"
+      - "${MQTT_WS_PORT:-9001}:9001"
+    volumes:
+      - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mqtt-data:/mosquitto/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "mosquitto_sub -h localhost -t '$$SYS/#' -C 1 -W 3 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Banco de dados dedicado ao Keycloak.
+  keycloak-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${KEYCLOAK_DB_NAME}
+      POSTGRES_USER: ${KEYCLOAK_DB_USER}
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+    volumes:
+      - keycloak-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U ${KEYCLOAK_DB_USER} -d ${KEYCLOAK_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Servidor de identidade (OIDC). Modo dev (start-dev) apenas para desenvolvimento.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    restart: unless-stopped
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/${KEYCLOAK_DB_NAME}
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USER}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "${KEYCLOAK_HTTP_PORT:-8080}:8080"
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+
+  # Mock de sensores (opcional). Habilitado com: docker compose --profile mock up
+  mock-sensors:
+    build:
+      context: ./mock-sensors
+    restart: unless-stopped
+    profiles: ["mock"]
+    environment:
+      MQTT_BROKER: ${MQTT_BROKER:-mqtt}
+      MOCK_UNIT_ID: ${MOCK_UNIT_ID:-data-center-sp-01}
+    depends_on:
+      mqtt:
+        condition: service_healthy
+
+volumes:
+  db-data:
+  keycloak-db-data:
+  mqtt-data:
