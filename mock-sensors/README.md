@@ -29,12 +29,24 @@ pip install -e ".[dev]"
 pytest          # testes
 ruff check .    # lint
 black .         # format
-python -m mock_sensors.publisher   # (F4) publica no broker
+python -m mock_sensors.publisher   # publica no broker
 ```
 
-Variavel `MQTT_BROKER` define o host do broker (default `localhost`).
+## Configuracao (variaveis de ambiente)
 
-## Pendencia
+| Variavel | Default | Descricao |
+|---|---|---|
+| `MQTT_BROKER` | `localhost` | Host do broker |
+| `MQTT_PORT` | `1883` | Porta do broker |
+| `MOCK_UNIT_IDS` | `data-center-sp-01` | Unidades a simular (separadas por virgula) |
+| `MOCK_SCENARIO` | `normal` | `normal`, `pico` ou `silencio` |
+| `MOCK_INTERVAL_SECONDS` | `30` | Intervalo entre ciclos de publicacao |
 
-A publicacao periodica real, cenarios (pico/silencio) e multiplas unidades entram
-na **F4** (issue #4).
+## Cenarios
+
+- **normal** — consumo tipico.
+- **pico** — consumo elevado (exercita alertas futuros).
+- **silencio** — nao publica, para exercitar a regra "sem dados recentes" (R05).
+
+A logica de cenarios (`scenarios.py`) e o loop (`publisher.run`) sao testados sem
+broker, com um client falso. Ver `tests/test_publisher.py`.
