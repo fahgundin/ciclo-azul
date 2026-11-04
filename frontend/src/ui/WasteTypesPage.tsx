@@ -2,12 +2,14 @@ import { useEffect, useState, type FormEvent } from 'react';
 import type { WasteTypeView } from '@ciclo-azul/contracts';
 import type { WasteTypeApi } from '../core/api/waste-type-api';
 import { ApiError } from '../core/api/api-error';
+import './styles/waste-types.css';
 
 /**
  * Tela de cadastro e listagem de tipos de residuo (R07).
  *
  * Componente de UI (web): consome o WasteTypeApi de core/. Exibe a mensagem exata
- * de erro vinda do backend (ex.: classificacao obrigatoria).
+ * de erro vinda do backend (ex.: classificacao obrigatoria). Visual: tema claro
+ * azul com superficies "liquid glass" (ver styles/).
  */
 export function WasteTypesPage({ api }: { api: WasteTypeApi }): JSX.Element {
   const [items, setItems] = useState<WasteTypeView[]>([]);
@@ -46,39 +48,45 @@ export function WasteTypesPage({ api }: { api: WasteTypeApi }): JSX.Element {
   }
 
   return (
-    <section>
+    <section className="waste-page">
       <h1>Tipos de resíduo</h1>
 
-      <form onSubmit={handleSubmit} aria-label="Cadastrar tipo de resíduo">
-        <label>
-          Nome
-          <input
-            name="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </label>
-        <label>
-          Classificação
-          <input
-            name="classification"
-            value={classification}
-            onChange={(e) => setClassification(e.target.value)}
-          />
-        </label>
-        <button type="submit" disabled={loading}>
-          Cadastrar
-        </button>
-      </form>
+      <div className="glass waste-card">
+        <form className="waste-form" onSubmit={handleSubmit} aria-label="Cadastrar tipo de resíduo">
+          <label>
+            Nome
+            <input name="name" value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <label>
+            Classificação
+            <input
+              name="classification"
+              value={classification}
+              onChange={(e) => setClassification(e.target.value)}
+            />
+          </label>
+          <button type="submit" disabled={loading}>
+            Cadastrar
+          </button>
+        </form>
 
-      {error && <p role="alert">{error}</p>}
+        {error && (
+          <p className="waste-alert" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
 
-      <ul aria-label="Tipos cadastrados">
-        {items.map((item) => (
-          <li key={item.id}>
-            {item.name} — {item.classification}
-          </li>
-        ))}
+      <ul className="glass waste-list" aria-label="Tipos cadastrados">
+        {items.length === 0 ? (
+          <li className="waste-list-empty">Nenhum tipo de resíduo cadastrado ainda.</li>
+        ) : (
+          items.map((item) => (
+            <li key={item.id}>
+              {item.name} — {item.classification}
+            </li>
+          ))
+        )}
       </ul>
     </section>
   );

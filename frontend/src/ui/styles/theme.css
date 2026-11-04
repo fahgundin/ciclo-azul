@@ -1,0 +1,131 @@
+/*
+ * Design system do Ciclo Azul — tema claro, paleta azul "agua" (ODS 6).
+ * Tokens em custom properties para ajuste facil. CSS puro, sem libs.
+ */
+
+:root {
+  /* Paleta azul (agua) */
+  --color-primary-50: #eef7ff;
+  --color-primary-100: #d9edff;
+  --color-primary-200: #bce0ff;
+  --color-primary-300: #8ecdff;
+  --color-primary-400: #59b0fc;
+  --color-primary-500: #2f90f0;
+  --color-primary-600: #1b72d4;
+  --color-primary-700: #185bab;
+  --color-primary-800: #194d8c;
+  --color-primary-900: #194273;
+
+  /* Neutros (tema claro) */
+  --color-text: #0f2436;
+  --color-text-muted: #4a6075;
+  --color-bg: #f0f7fc;
+  --color-surface: #ffffff;
+  --color-danger: #b4232a;
+  --color-danger-bg: #fdecec;
+
+  /* Superficie "liquid glass" (translucida) */
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-blur: 18px;
+
+  /* Raios, sombras, espacamento, tipografia */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --shadow-sm: 0 1px 3px rgba(25, 66, 115, 0.08);
+  --shadow-md: 0 8px 30px rgba(25, 66, 115, 0.12);
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --space-4: 2rem;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Reset leve */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  /* Fundo claro com gradiente suave em tons de azul agua. */
+  background:
+    radial-gradient(1200px 600px at 10% -10%, var(--color-primary-100), transparent 60%),
+    radial-gradient(1000px 500px at 110% 10%, var(--color-primary-200), transparent 55%),
+    var(--color-bg);
+  background-attachment: fixed;
+  line-height: 1.5;
+  /* Evita zoom horizontal indesejado no mobile. */
+  -webkit-text-size-adjust: 100%;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--color-primary-900);
+  line-height: 1.2;
+}
+
+/* Foco visivel para acessibilidade (teclado). */
+:focus-visible {
+  outline: 3px solid var(--color-primary-400);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+ * App shell (casca do app): barra de topo fixa + area de conteudo.
+ * Mobile-first — pensado para celular; adapta para telas maiores via @media.
+ * --------------------------------------------------------------------------- */
+
+.app-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  /* Respeita o notch/altura segura no iOS. */
+  padding: calc(env(safe-area-inset-top, 0px) + 0.8rem) var(--space-2) 0.8rem;
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-800));
+  box-shadow: var(--shadow-md);
+}
+
+.app-topbar__logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #fff, var(--color-primary-200));
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.5);
+}
+
+.app-topbar__title {
+  margin: 0;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.app-content {
+  flex: 1;
+  width: 100%;
+  /* Espaco seguro na base (gestos do iOS). */
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-2));
+}
