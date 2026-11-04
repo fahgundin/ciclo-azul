@@ -40,5 +40,19 @@
         }
       ]
     }
+  ],
+  "users": [
+    {
+      "username": "gestor",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Gestor",
+      "lastName": "Ambiental",
+      "email": "gestor@ciclo-azul.dev",
+      "credentials": [
+        { "type": "password", "value": "gestor", "temporary": false }
+      ],
+      "realmRoles": ["gestor-ambiental"]
+    }
   ]
 }
