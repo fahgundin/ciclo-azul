@@ -12,6 +12,7 @@ Saneamento**.
 | [arquitetura.md](arquitetura.md) | Stack, estilo (Clean + Hexagonal), camadas, tempo real e segurança/API interna. |
 | [contrato-iot.md](contrato-iot.md) | Contrato MQTT sensores ↔ backend (tópicos, payload, QoS, regras). |
 | [historias-de-usuario.md](historias-de-usuario.md) | Histórias de usuário e testes de aceitação (Gherkin). |
+| [migracao-frontend.md](migracao-frontend.md) | Migração do protótipo de frontend para React + TS: diretrizes, estado das telas e pendências. |
 | [decisoes/](decisoes/README.md) | ADRs — registros das decisões de arquitetura. |
 
 ## Decisões técnicas (resumo)
