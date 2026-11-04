@@ -1,9 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, type Provider } from '@nestjs/common';
 import { AuthModule } from '../../auth/auth.module';
+import { DatabaseModule, isDatabaseEnabled } from '../../database/database.module';
 import { RegisterWaterReading } from './application/register-water-reading.use-case';
 import { READING_PUBLISHER } from './application/reading-publisher';
 import { WATER_READING_REPOSITORY } from './domain/water-reading.repository';
 import { InMemoryWaterReadingRepository } from './infrastructure/in-memory-water-reading.repository';
+import { PostgresWaterReadingRepository } from './infrastructure/persistence/postgres-water-reading.repository';
 import { ReadingDeduplicator } from './infrastructure/mqtt/reading-deduplicator';
 import { MqttReadingProcessor } from './infrastructure/mqtt/mqtt-reading.processor';
 import { MqttReadingSubscriber } from './infrastructure/mqtt/mqtt-reading.subscriber';
@@ -12,20 +14,21 @@ import { WaterMonitoringGateway } from './infrastructure/ws/water-monitoring.gat
 /**
  * Modulo de monitoramento de agua (R04/R05).
  *
- * Fluxo de ingestao: MqttReadingSubscriber -> MqttReadingProcessor -> (valida +
- * deduplica) -> RegisterWaterReading (persiste) -> ReadingPublisher (tempo real).
+ * Fluxo: MqttReadingSubscriber -> MqttReadingProcessor -> (valida + deduplica) ->
+ * RegisterWaterReading (persiste) -> ReadingPublisher (gateway WebSocket).
  *
- * O WaterMonitoringGateway e o adapter concreto do port READING_PUBLISHER,
- * emitindo via WebSocket por unidade (room).
+ * O adapter de persistencia e escolhido por ambiente (Postgres via DATABASE_URL,
+ * senao in-memory).
  */
+const repositoryProvider: Provider = isDatabaseEnabled()
+  ? { provide: WATER_READING_REPOSITORY, useClass: PostgresWaterReadingRepository }
+  : { provide: WATER_READING_REPOSITORY, useClass: InMemoryWaterReadingRepository };
+
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, DatabaseModule.forFeature()],
   providers: [
     RegisterWaterReading,
-    {
-      provide: WATER_READING_REPOSITORY,
-      useClass: InMemoryWaterReadingRepository,
-    },
+    repositoryProvider,
     ReadingDeduplicator,
     MqttReadingProcessor,
     MqttReadingSubscriber,
