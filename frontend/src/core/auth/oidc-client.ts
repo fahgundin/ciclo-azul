@@ -64,7 +64,18 @@ export class OidcClient {
       body: body.toString(),
     });
     if (!res.ok) {
-      throw new Error(`Falha ao trocar o code por token: ${res.status}`);
+      // Expoe o motivo real do Keycloak (ex.: invalid_grant, invalid_client)
+      // para facilitar o diagnostico em vez de mascarar com um status generico.
+      let detail = '';
+      try {
+        const err = (await res.json()) as { error?: string; error_description?: string };
+        detail = [err.error, err.error_description].filter(Boolean).join(': ');
+      } catch {
+        // resposta sem JSON
+      }
+      throw new Error(
+        `Falha ao trocar o code por token: ${res.status}${detail ? ` (${detail})` : ''}`,
+      );
     }
     const json = (await res.json()) as {
       access_token: string;
