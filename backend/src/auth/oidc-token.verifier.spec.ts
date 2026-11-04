@@ -1,5 +1,29 @@
-import { extractRoles, toAuthenticatedUser } from './oidc-token.verifier';
+import { audienceMatches, extractRoles, toAuthenticatedUser } from './oidc-token.verifier';
 import { APP_ROLES } from './roles';
+
+describe('audienceMatches (client publico)', () => {
+  const EXPECTED = 'ciclo-azul-web';
+
+  it('aceita quando o clientId esta no aud (string)', () => {
+    expect(audienceMatches({ aud: EXPECTED }, EXPECTED)).toBe(true);
+  });
+
+  it('aceita quando o clientId esta no aud (array)', () => {
+    expect(audienceMatches({ aud: ['account', EXPECTED] }, EXPECTED)).toBe(true);
+  });
+
+  it('aceita via azp quando o aud nao traz o clientId (caso client publico)', () => {
+    expect(audienceMatches({ aud: 'account', azp: EXPECTED }, EXPECTED)).toBe(true);
+  });
+
+  it('rejeita quando nem aud nem azp batem', () => {
+    expect(audienceMatches({ aud: 'account', azp: 'outro' }, EXPECTED)).toBe(false);
+  });
+
+  it('rejeita quando nao ha aud nem azp', () => {
+    expect(audienceMatches({}, EXPECTED)).toBe(false);
+  });
+});
 
 describe('extracao de roles do token', () => {
   it('extrai apenas roles conhecidos do realm', () => {
