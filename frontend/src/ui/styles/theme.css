@@ -129,3 +129,48 @@ h3 {
   /* Espaco seguro na base (gestos do iOS). */
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-2));
 }
+
+.app-topbar__spacer {
+  flex: 1;
+}
+
+.app-topbar__action {
+  min-height: 40px;
+  padding: 0.4rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.app-topbar__action:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.login-cta {
+  margin-top: var(--space-2);
+  min-height: 48px;
+  width: 100%;
+  padding: 0.8rem 1.4rem;
+  border: none;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+
+.login-cta:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (min-width: 640px) {
+  .login-cta {
+    width: auto;
+  }
+}

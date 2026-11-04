@@ -8,11 +8,19 @@ export interface AuthorizationRequest {
   state: string;
 }
 
+/** Tokens retornados pelo endpoint de token do Keycloak. */
+export interface TokenResponse {
+  accessToken: string;
+  refreshToken?: string;
+  expiresIn?: number;
+}
+
 /**
  * Cliente OIDC desacoplado da UI (authorization code + PKCE).
  *
- * Responsavel apenas por montar a requisicao de autorizacao. A UI decide como
- * redirecionar e onde guardar o code_verifier/state. Mantem core/ agnostico.
+ * Responsavel por montar a requisicao de autorizacao e trocar o authorization
+ * code por tokens. A UI decide como redirecionar e onde guardar o token. Mantem
+ * core/ agnostico.
  */
 export class OidcClient {
   constructor(private readonly config: OidcConfig) {}
@@ -35,5 +43,38 @@ export class OidcClient {
 
     const url = `${this.config.issuer}/protocol/openid-connect/auth?${params.toString()}`;
     return { url, codeVerifier, state };
+  }
+
+  /**
+   * Troca o authorization code (recebido no callback) por tokens, usando o
+   * code_verifier guardado no inicio do fluxo (PKCE). Client publico: sem secret.
+   */
+  async exchangeCode(code: string, codeVerifier: string): Promise<TokenResponse> {
+    const body = new URLSearchParams({
+      grant_type: 'authorization_code',
+      client_id: this.config.clientId,
+      redirect_uri: this.config.redirectUri,
+      code,
+      code_verifier: codeVerifier,
+    });
+
+    const res = await fetch(`${this.config.issuer}/protocol/openid-connect/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
+    if (!res.ok) {
+      throw new Error(`Falha ao trocar o code por token: ${res.status}`);
+    }
+    const json = (await res.json()) as {
+      access_token: string;
+      refresh_token?: string;
+      expires_in?: number;
+    };
+    return {
+      accessToken: json.access_token,
+      refreshToken: json.refresh_token,
+      expiresIn: json.expires_in,
+    };
   }
 }
