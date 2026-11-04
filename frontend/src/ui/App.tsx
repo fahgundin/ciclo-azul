@@ -1,20 +1,54 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { WasteTypeApi } from '../core/api/waste-type-api';
-import { WasteTypesPage } from './WasteTypesPage';
+import { userFromToken } from '../core/auth/token';
+import { FlashProvider, useFlash } from './components/Flash';
+import { LoginPage } from './LoginPage';
+import { buildPages } from './pages';
+import { AppShell } from './shell/AppShell';
 import { useAuth } from './useAuth';
 
 const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 /**
- * Raiz da UI web. App shell (barra de topo + conteudo) com estado de login.
- *
- * O token vem da sessao OIDC (useAuth) e e injetado no WasteTypeApi, que o envia
- * em cada chamada. Sem login, a tela convida a entrar.
+ * Raiz da UI web. Precisa estar dentro de um Router (BrowserRouter em main.tsx).
  */
 export function App(): JSX.Element {
+  return (
+    <FlashProvider>
+      <AppContent />
+    </FlashProvider>
+  );
+}
+
+/**
+ * Decide entre a area publica (convite para entrar) e o app autenticado (shell
+ * com navegacao por perfil). O perfil vem das roles do access token (Keycloak).
+ */
+function AppContent(): JSX.Element {
   const auth = useAuth();
+  const flash = useFlash();
   // O api le o token "ao vivo" via closure sobre auth.token.
   const api = useMemo(() => new WasteTypeApi(apiUrl, () => auth.token), [auth.token]);
+  const pages = useMemo(() => buildPages({ wasteApi: api }), [api]);
+  const user = useMemo(() => userFromToken(auth.token), [auth.token]);
+
+  const logout = useCallback(() => {
+    auth.logout();
+    flash('Sessão encerrada.');
+  }, [auth, flash]);
+
+  if (user) {
+    return (
+      <>
+        {auth.error && (
+          <p className="waste-alert" role="alert" style={{ margin: 'var(--space-2)' }}>
+            {auth.error}
+          </p>
+        )}
+        <AppShell user={user} pages={pages} onLogout={logout} />
+      </>
+    );
+  }
 
   return (
     <div className="app-shell">
@@ -22,15 +56,9 @@ export function App(): JSX.Element {
         <span className="app-topbar__logo" aria-hidden="true" />
         <p className="app-topbar__title">Ciclo Azul</p>
         <div className="app-topbar__spacer" />
-        {auth.isAuthenticated ? (
-          <button className="app-topbar__action" onClick={auth.logout}>
-            Sair
-          </button>
-        ) : (
-          <button className="app-topbar__action" onClick={() => void auth.login()}>
-            Entrar
-          </button>
-        )}
+        <button className="app-topbar__action" onClick={() => void auth.login()}>
+          Entrar
+        </button>
       </header>
 
       <main className="app-content">
@@ -39,24 +67,7 @@ export function App(): JSX.Element {
             {auth.error}
           </p>
         )}
-
-        {auth.isAuthenticated ? (
-          <WasteTypesPage api={api} />
-        ) : (
-          <section className="waste-page">
-            <div className="glass waste-card">
-              <h1>Bem-vindo ao Ciclo Azul</h1>
-              <p>Entre para gerenciar os tipos de resíduo da operação.</p>
-              <button
-                className="login-cta"
-                onClick={() => void auth.login()}
-                disabled={auth.loading}
-              >
-                {auth.loading ? 'Entrando…' : 'Entrar'}
-              </button>
-            </div>
-          </section>
-        )}
+        <LoginPage onLogin={() => void auth.login()} loading={auth.loading} />
       </main>
     </div>
   );
