@@ -62,3 +62,22 @@ docker compose down -v
   diretoria). A integracao de auth no backend (guard global + RBAC) faz parte da
   **F3** (issue #3), ja implementada.
 - `.env` **nunca** e versionado. Apenas `.env.example`.
+
+## Autenticacao: pontos importantes (leia antes de debugar login)
+
+- **O Keycloak so importa o realm na PRIMEIRA vez.** Se o volume do `keycloak-db`
+  ja existe, mudancas no `realm-ciclo-azul.json` **nao sao reaplicadas**. Para
+  reimportar do zero: `docker compose down -v` (apaga os dados) e `up -d`.
+- O client `ciclo-azul-web` e **publico** (sem secret), com PKCE — correto para a
+  SPA/PWA. No console, isso corresponde a *Client authentication = OFF*.
+- **Usuario de desenvolvimento** (vem no realm export, apos recriar o ambiente):
+  - usuario: `gestor`  ·  senha: `gestor`  ·  papel: `gestor-ambiental`
+  - permite logar e usar a tela de residuos sem configuracao manual.
+- Para acessar `/waste-types` e preciso o papel `gestor-ambiental`. Se criar outro
+  usuario na mao, atribua esse **realm role** e faca **logout/login** (o papel so
+  entra num token novo).
+
+## Seed de dados (dev)
+
+O backend popula tipos de residuo de exemplo no boot (idempotente — nao duplica).
+Desative com `DB_SEED=false` no `.env`. Assim a tela ja aparece com dados.
