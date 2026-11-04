@@ -24,9 +24,20 @@ src/
       infrastructure/
         mqtt/                   # ingestao: subscriber, validacao, dedup, processor
         ws/                     # gateway WebSocket (tempo real, implementa o port)
-        in-memory-...           # repo in-memory (Postgres na F2)
+        persistence/            # entidade ORM + mapper + adapter Postgres
+        in-memory-...           # repo in-memory (fallback sem DATABASE_URL)
       water-monitoring.module.ts
+    waste-management/           # R07 (tipos de residuo)
+      domain/ application/ infrastructure/ (mesma estrutura)
+  database/                     # DatabaseModule (TypeORM/Postgres por env)
 ```
+
+### Persistencia (Postgres via TypeORM)
+
+Os modulos escolhem o adapter de repositorio por ambiente: com `DATABASE_URL`
+definido usam **Postgres** (TypeORM); sem ele, caem no **in-memory** (dev/testes/CI).
+As entidades ORM e mappers ficam em `infrastructure/persistence/` — o dominio nao
+conhece o ORM. `synchronize` so em dev; migrations reais para producao sao pendencia.
 
 ### Fluxo de ingestao e tempo real
 
@@ -68,7 +79,7 @@ pnpm --filter @ciclo-azul/backend lint
 
 ## Pendencias das proximas issues
 
-- F2: adapter Postgres (TypeORM) substituindo o repositorio in-memory.
+- ~~F2: adapter Postgres (TypeORM) substituindo o repositorio in-memory.~~ **Concluido** (#23); migrations de producao pendentes.
 - ~~F3: guard global de autenticacao (Keycloak/OIDC) + RBAC; `/health` publico.~~ **Concluido.**
 - ~~F4: adapter de entrada MQTT alimentando `RegisterWaterReading`.~~ **Concluido.**
 - ~~F5: gateway WebSocket emitindo atualizacoes ao frontend.~~ **Concluido.**
