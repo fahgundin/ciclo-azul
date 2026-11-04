@@ -1,27 +1,21 @@
-import { useEffect, useState } from 'react';
-import { ApiClient } from '../core/api/api-client';
+import { WasteTypeApi } from '../core/api/waste-type-api';
+import { WasteTypesPage } from './WasteTypesPage';
 
 /**
- * Componente de UI (web). Consome a camada core/ (ApiClient).
+ * Raiz da UI web. Monta a tela de tipos de residuo (R07), injetando o
+ * WasteTypeApi de core/.
  *
- * REGRA: ui/ pode importar de core/, mas core/ NUNCA importa de ui/.
+ * Token: por ora, lido de localStorage ("access_token") em dev. O fluxo OIDC
+ * completo (login via Keycloak preenchendo esse token) sera ligado numa proxima
+ * iteracao; o cliente de core/auth ja existe.
  */
-const api = new ApiClient(import.meta.env.VITE_API_URL ?? 'http://localhost:3000');
+const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+const api = new WasteTypeApi(apiUrl, () => localStorage.getItem('access_token'));
 
 export function App(): JSX.Element {
-  const [status, setStatus] = useState<string>('...');
-
-  useEffect(() => {
-    api
-      .getHealth()
-      .then((h) => setStatus(h.status))
-      .catch(() => setStatus('indisponivel'));
-  }, []);
-
   return (
     <main>
-      <h1>Ciclo Azul</h1>
-      <p>Status do backend: {status}</p>
+      <WasteTypesPage api={api} />
     </main>
   );
 }
