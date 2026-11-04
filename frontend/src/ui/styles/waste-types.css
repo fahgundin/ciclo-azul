@@ -1,0 +1,133 @@
+/*
+ * Utilitario "liquid glass" (vidro fosco translucido, estilo iOS) e estilos da
+ * tela de tipos de residuo. Usa backdrop-filter com fallback.
+ */
+
+/* Superficie liquid glass. */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  /* Brilho sutil no topo, reforcando o aspecto de vidro. */
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0) 40%
+  );
+}
+
+/* Aplica o desfoque de fundo apenas onde ha suporte. */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    background: var(--glass-bg);
+  }
+}
+
+/* Fallback: sem backdrop-filter, usa superficie mais opaca para manter contraste. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: rgba(255, 255, 255, 0.92);
+  }
+}
+
+/* --- Tela de tipos de residuo (R07) --- */
+
+.waste-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.waste-card {
+  padding: var(--space-3);
+}
+
+.waste-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.waste-form label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.waste-form input {
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--color-primary-200);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.waste-form button {
+  align-self: flex-start;
+  padding: 0.7rem 1.4rem;
+  border: none;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.08s ease, filter 0.15s ease;
+}
+
+.waste-form button:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.waste-form button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.waste-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Alerta de erro (role=alert). */
+.waste-alert {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border: 1px solid rgba(180, 35, 42, 0.25);
+  font-weight: 600;
+}
+
+/* Listagem. */
+.waste-list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.waste-list li {
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--color-primary-100);
+}
+
+.waste-list-empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
