@@ -52,11 +52,12 @@ disponível vê "Em construção".
 
 ### Backend sem endpoints para as telas
 
-Hoje o backend expõe apenas tipos de resíduo (R07) e a ingestão de leituras de água
-por MQTT com o canal WebSocket (R04/R05). Não existem endpoints REST para:
+O backend expõe tipos de resíduo (R07), a ingestão de leituras de água por MQTT com o
+canal WebSocket (R04/R05) e, desde o R04 (#7), a API REST de sensores e leituras
+(`/sensors`, `/water-readings`, ver `backend/README.md`). Não existem endpoints REST para:
 
-- listagem de sensores e de leituras, e lançamento de leitura manual (R04);
-- histórico de consumo por unidade (R05);
+- agregações de consumo para o tempo real (R05) — o histórico bruto por unidade
+  (`GET /water-readings?unitId=`) já existe;
 - lotes de resíduo e destinação (R06);
 - limites, alertas e prazo de destinação (R03/R08);
 - relatórios (R09);
@@ -65,7 +66,23 @@ por MQTT com o canal WebSocket (R04/R05). Não existem endpoints REST para:
 - gestão de usuários além do que o Keycloak já oferece (R01);
 - trilha de auditoria (RNF02).
 
-Cada tela correspondente usará um adapter em memória até o endpoint existir.
+Cada tela correspondente usará um adapter em memória até o endpoint existir. A tela
+de sensores (#39) já pode trocar o adapter pela API do R04, com as lacunas abaixo.
+
+### Lacunas do R04 em relação ao protótipo
+
+O backend do R04 cobre o vínculo de sensor, a leitura manual e o histórico. Ficaram
+de fora, por falta de base no backend (AGENTS §7):
+
+- **Unidades:** não há cadastro de unidades; qualquer `unitId` é aceito (mesma
+  decisão do `contrato-iot.md`, seção 8). Por isso a regra "leitura manual só nas
+  unidades do operador" não é aplicada no backend.
+- **Sensor "online":** a regra do protótipo fala em unidade sem sensor *online*. O
+  backend considera apenas sensor *vinculado* (status "Conectado"); não há
+  acompanhamento de conexão/última leitura por sensor.
+- **Retificação** de leitura com justificativa mínima, preservando o valor original:
+  depende de trilha de auditoria (RNF02) e não foi implementada.
+- **Desvincular** sensor: não faz parte dos critérios do R04.
 
 ### Classificação dos tipos de resíduo
 

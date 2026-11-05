@@ -2,9 +2,10 @@ import { Module, type DynamicModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { WasteTypeEntity } from '../modules/waste-management/infrastructure/persistence/waste-type.entity';
 import { WaterReadingEntity } from '../modules/water-monitoring/infrastructure/persistence/water-reading.entity';
+import { SensorEntity } from '../modules/water-monitoring/infrastructure/persistence/sensor.entity';
 
 /** Todas as entidades ORM registradas na conexao. */
-const ENTITIES = [WasteTypeEntity, WaterReadingEntity];
+const ENTITIES = [WasteTypeEntity, WaterReadingEntity, SensorEntity];
 
 /**
  * Indica se a persistencia Postgres esta configurada (via env).

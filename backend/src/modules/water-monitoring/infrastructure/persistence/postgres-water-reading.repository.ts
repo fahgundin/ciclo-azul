@@ -28,4 +28,12 @@ export class PostgresWaterReadingRepository implements WaterReadingRepository {
     });
     return row ? WaterReadingMapper.toDomain(row) : null;
   }
+
+  async findByUnit(unitId: string): Promise<WaterReading[]> {
+    const rows = await this.repo.find({
+      where: { unitId },
+      order: { timestamp: 'DESC' },
+    });
+    return rows.map((r) => WaterReadingMapper.toDomain(r));
+  }
 }

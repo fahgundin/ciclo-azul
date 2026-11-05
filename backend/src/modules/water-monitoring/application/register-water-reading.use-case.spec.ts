@@ -12,6 +12,9 @@ class InMemoryRepository implements WaterReadingRepository {
     const list = this.readings.filter((r) => r.unitId === unitId);
     return list.at(-1) ?? null;
   }
+  async findByUnit(unitId: string): Promise<WaterReading[]> {
+    return this.readings.filter((r) => r.unitId === unitId);
+  }
 }
 
 describe('RegisterWaterReading (caso de uso)', () => {
