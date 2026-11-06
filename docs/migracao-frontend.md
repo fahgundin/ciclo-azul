@@ -54,13 +54,13 @@ disponível vê "Em construção".
 
 O backend expõe tipos de resíduo (R07), a ingestão de leituras de água por MQTT com o
 canal WebSocket (R04/R05), a API REST de sensores e leituras (`/sensors`,
-`/water-readings`, desde o R04, #7) e o estado de consumo por unidade
-(`/water-status`, desde o R05, #9). Ver `backend/README.md`. Não existem endpoints REST para:
+`/water-readings`, desde o R04, #7), o estado de consumo por unidade
+(`/water-status`, desde o R05, #9) e a de lotes e destinação (`/waste-lots`, desde o
+R06, #8). Ver `backend/README.md`. Não existem endpoints REST para:
 
 - consumo agregado por período (dia, mês), para R03/R10 — o estado atual
   (`GET /water-status`) e o histórico bruto por unidade (`GET /water-readings?unitId=`)
   já existem;
-- lotes de resíduo e destinação (R06);
 - limites, alertas e prazo de destinação (R03/R08);
 - relatórios (R09);
 - oportunidades de reuso (R02);
@@ -85,6 +85,25 @@ de fora, por falta de base no backend (AGENTS §7):
 - **Retificação** de leitura com justificativa mínima, preservando o valor original:
   depende de trilha de auditoria (RNF02) e não foi implementada.
 - **Desvincular** sensor: não faz parte dos critérios do R04.
+
+### Lacunas do R06 em relação ao protótipo
+
+O backend do R06 cobre o registro da destinação (com comprovante obrigatório) e a
+listagem. Só os critérios do #8 foram implementados; o restante fica pendente
+(AGENTS §7) e a tela (#41) deve aplicá-lo, ou aguardar decisão:
+
+- **Licença válida na data:** o backend só exige que a licença seja *informada*. Não
+  há cadastro de empresas receptoras nem de licenças com validade, então a regra
+  "empresa com licença válida na data" do protótipo não é verificada.
+- **Dupla confirmação** por outro gestor para resíduo perigoso: depende de uma noção
+  de periculosidade, que hoje não existe (a classificação é um texto livre; ver
+  "Classificação dos tipos de resíduo" abaixo) e de um fluxo de confirmação.
+- **Comprovante:** é uma *referência* (texto ou URL). Upload e armazenamento de
+  arquivo não foram implementados.
+- **Quantidade:** é um número sem unidade de medida (kg, L, unidades...). A unidade
+  precisa ser definida com o negócio.
+- **Lotes sem destinação:** registrar a destinação cria o lote já "Destinado". Não
+  existe lote pendente, que o R08 (alerta de prazo) vai exigir.
 
 ### Classificação dos tipos de resíduo
 
