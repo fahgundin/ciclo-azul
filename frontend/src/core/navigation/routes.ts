@@ -22,6 +22,10 @@ export interface AppRoute {
  * PENDENCIA: '/residuos' exige `waste.types` (somente Gestor Ambiental) porque
  * hoje o backend restringe GET /waste-types a esse perfil. Quando a leitura for
  * liberada a Diretoria, passar para `waste.view` (ver docs/migracao-frontend.md).
+ *
+ * PENDENCIA: '/sensores' e so do Operador (escopo.md e HU02), embora o backend
+ * tambem aceite o Administrador em POST /sensors. Ver "Perfis" em
+ * docs/migracao-frontend.md antes de alterar.
  */
 export const APP_ROUTES: readonly AppRoute[] = [
   { path: '/painel', label: 'Painel', icon: 'home', permission: null },

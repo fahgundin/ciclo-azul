@@ -105,9 +105,25 @@ Efeitos na tela de sensores (#39), que difere do protótipo nestes pontos:
   exibe litros.
 - **Datas de leitura manual:** são datas de calendário gravadas à meia-noite UTC; a
   tela as exibe em UTC para não aparecerem um dia antes no fuso do Brasil.
-- **Perfis:** a rota `/sensores` segue a matriz do protótipo (somente Operador). O
-  backend também aceita o Administrador para vincular sensores; liberar a tela a ele
-  é decisão de produto pendente.
+- **Perfis (inconsistência entre documentação e backend):** a tela `/sensores` é
+  exclusiva do **Operador**. Decisão: seguir a documentação de produto, não o
+  backend. O motivo é uma divergência que ficou registrada aqui:
+  - **Documentação de produto** só prevê o Operador: `escopo.md` (R04, perfil
+    Operador) e a HU02 em `historias-de-usuario.md` ("Como um Operador"; os cenários
+    de conectar sensor e de leitura manual começam com "estou autenticado como
+    Operador"). O protótipo também dá `sensors.manage` só ao Operador.
+  - **Backend** aceita **Operador e Administrador** em `POST /sensors`
+    (`@Roles(OPERADOR, ADMINISTRADOR)`, listado assim no `backend/README.md`). Nenhum
+    documento de produto justifica o Administrador; parece ter sido acrescentado na
+    implementação, sem registro do motivo. A leitura manual (`POST
+    /water-readings/manual`) é só do Operador, coerente com a documentação.
+  - **Efeito:** um Administrador consegue vincular sensor chamando a API
+    diretamente, mas não vê a tela. Como a autorização real é do backend, o
+    frontend não "bloqueia" nada; apenas não oferece a tela.
+  - **A decidir pela equipe** (sem mudar nada antes disso): (a) manter assim;
+    (b) liberar a tela ao Administrador e atualizar a HU02; ou (c) restringir o
+    backend ao Operador, em issue própria. Se (b), basta conceder a permissão
+    `sensors.manage` ao perfil em `core/auth/permissions.ts`.
 
 ### Lacunas do R06 em relação ao protótipo
 
