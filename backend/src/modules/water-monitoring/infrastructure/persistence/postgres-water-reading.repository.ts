@@ -36,4 +36,15 @@ export class PostgresWaterReadingRepository implements WaterReadingRepository {
     });
     return rows.map((r) => WaterReadingMapper.toDomain(r));
   }
+
+  async findLatestPerUnit(): Promise<WaterReading[]> {
+    // Uma linha por unidade: a de maior timestamp (DISTINCT ON do Postgres).
+    const rows = await this.repo
+      .createQueryBuilder('reading')
+      .distinctOn(['reading.unitId'])
+      .orderBy('reading.unitId', 'ASC')
+      .addOrderBy('reading.timestamp', 'DESC')
+      .getMany();
+    return rows.map((r) => WaterReadingMapper.toDomain(r));
+  }
 }

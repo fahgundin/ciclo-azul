@@ -41,6 +41,9 @@ class FakeReadingRepository implements WaterReadingRepository {
       .filter((r) => r.unitId === unitId)
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }
+  async findLatestPerUnit(): Promise<WaterReading[]> {
+    return [];
+  }
 }
 
 const NOW = new Date('2026-11-05T15:00:00.000Z');

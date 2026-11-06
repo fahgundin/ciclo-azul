@@ -53,11 +53,13 @@ disponível vê "Em construção".
 ### Backend sem endpoints para as telas
 
 O backend expõe tipos de resíduo (R07), a ingestão de leituras de água por MQTT com o
-canal WebSocket (R04/R05) e, desde o R04 (#7), a API REST de sensores e leituras
-(`/sensors`, `/water-readings`, ver `backend/README.md`). Não existem endpoints REST para:
+canal WebSocket (R04/R05), a API REST de sensores e leituras (`/sensors`,
+`/water-readings`, desde o R04, #7) e o estado de consumo por unidade
+(`/water-status`, desde o R05, #9). Ver `backend/README.md`. Não existem endpoints REST para:
 
-- agregações de consumo para o tempo real (R05) — o histórico bruto por unidade
-  (`GET /water-readings?unitId=`) já existe;
+- consumo agregado por período (dia, mês), para R03/R10 — o estado atual
+  (`GET /water-status`) e o histórico bruto por unidade (`GET /water-readings?unitId=`)
+  já existem;
 - lotes de resíduo e destinação (R06);
 - limites, alertas e prazo de destinação (R03/R08);
 - relatórios (R09);
@@ -108,3 +110,12 @@ O "prazo definido" de destinação de lotes ainda não tem valor oficial
 
 A telemetria do protótipo é simulada em tempo acelerado. Na migração, o tempo real
 usa o `realtime-client` (WebSocket) já existente; a simulação não é portada.
+
+Para a tela de água em tempo real (#40): ao abrir, buscar o estado atual em
+`GET /water-status` (ou `/water-status/:unitId`) e atualizar o valor a cada evento
+`reading` do WebSocket. O WebSocket **não** avisa quando uma unidade passa a "Sem dados
+recentes" (isso é calculado na consulta): a tela deve recalcular periodicamente com
+`lastReadingAt` e `staleAfterMinutes`, ou consultar de novo. O rótulo oficial é
+`NO_RECENT_DATA_LABEL` (`@ciclo-azul/contracts`). Unidades só com leitura manual
+também ficam em "Sem dados recentes" após 15 minutos, pois a data da leitura manual é
+de dia inteiro.
