@@ -1,8 +1,10 @@
 import { Module, type Provider } from '@nestjs/common';
 import { AuthModule } from '../../auth/auth.module';
 import { DatabaseModule, isDatabaseEnabled } from '../../database/database.module';
+import { GetUnitConsumptionStatus } from './application/get-unit-consumption-status.use-case';
 import { LinkSensor } from './application/link-sensor.use-case';
 import { ListSensors } from './application/list-sensors.use-case';
+import { ListUnitsConsumptionStatus } from './application/list-units-consumption-status.use-case';
 import { ListWaterReadings } from './application/list-water-readings.use-case';
 import { READING_PUBLISHER } from './application/reading-publisher';
 import { RegisterManualReading } from './application/register-manual-reading.use-case';
@@ -18,6 +20,7 @@ import { MqttReadingProcessor } from './infrastructure/mqtt/mqtt-reading.process
 import { MqttReadingSubscriber } from './infrastructure/mqtt/mqtt-reading.subscriber';
 import { SensorController } from './infrastructure/sensor.controller';
 import { WaterReadingController } from './infrastructure/water-reading.controller';
+import { WaterStatusController } from './infrastructure/water-status.controller';
 import { WaterMonitoringGateway } from './infrastructure/ws/water-monitoring.gateway';
 
 /**
@@ -27,6 +30,8 @@ import { WaterMonitoringGateway } from './infrastructure/ws/water-monitoring.gat
  * RegisterWaterReading (persiste) -> ReadingPublisher (gateway WebSocket).
  *
  * API REST (R04): sensores (vincular/listar) e leituras (manual/historico).
+ * API REST (R05): estado de consumo por unidade (consumo atual e "Sem dados
+ * recentes"), que complementa o canal WebSocket.
  *
  * Os adapters de persistencia sao escolhidos por ambiente (Postgres via
  * DATABASE_URL, senao in-memory).
@@ -41,13 +46,15 @@ const sensorRepositoryProvider: Provider = isDatabaseEnabled()
 
 @Module({
   imports: [AuthModule, DatabaseModule.forFeature()],
-  controllers: [SensorController, WaterReadingController],
+  controllers: [SensorController, WaterReadingController, WaterStatusController],
   providers: [
     RegisterWaterReading,
     LinkSensor,
     ListSensors,
     RegisterManualReading,
     ListWaterReadings,
+    GetUnitConsumptionStatus,
+    ListUnitsConsumptionStatus,
     waterReadingRepositoryProvider,
     sensorRepositoryProvider,
     ReadingDeduplicator,

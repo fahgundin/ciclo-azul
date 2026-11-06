@@ -91,8 +91,16 @@ Formato **JSON**, versionado também no corpo (redundância intencional com o t�
 
 - Se uma unidade **não** recebe leitura há **mais de 15 minutos**, o backend marca
   a unidade como **"Sem dados recentes"** no painel de tempo real.
-- Implementação: verificação baseada no `timestamp` da última leitura aceita por
-  unidade (job periódico e/ou cálculo sob demanda ao montar o estado do painel).
+- Implementação (R05): **cálculo sob demanda**, com base no `timestamp` da última
+  leitura da unidade (a de maior `timestamp`, de sensor ou manual). Exposto em
+  `GET /water-status` e `GET /water-status/:unitId` (estados `live`, `stale` e
+  `no-data`). Não há job periódico: a transição para "Sem dados recentes" **não** é
+  emitida pelo WebSocket, e o cliente recalcula com `lastReadingAt` e
+  `staleAfterMinutes`, ou consulta de novo.
+- Exatamente 15 minutos ainda é recente; "mais de 15" começa em 15 min e 1 s.
+- O "consumo atual" exibido é o `value` da última leitura. Se o `value` é um volume
+  por intervalo ou um acumulado do medidor não está definido no contrato (ponto a
+  confirmar, seção 8).
 - O valor **15 min** vem dos testes de aceitação de R05 e está registrado aqui
   como regra oficial. Alterações devem atualizar este documento.
 
@@ -159,3 +167,7 @@ while True:
   ou marcar como "orfa").
 - Necessidade real dos tópicos de `status`/LWT no MVP.
 - Autenticação do sensor no broker (usuário/senha ou TLS/mTLS) para produção.
+- **Semântica do `value`:** é o volume medido no intervalo ou o acumulado do
+  medidor? O R05 exibe o `value` da última leitura como "consumo atual", sem
+  agregar. Consumo por período (dia, mês), exigido por R03 (limites) e R10 (KPIs),
+  depende dessa definição.
