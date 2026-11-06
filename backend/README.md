@@ -99,6 +99,32 @@ sensor/mock --MQTT--> MqttReadingSubscriber -> MqttReadingProcessor
 O gateway autentica o cliente no handshake (token OIDC) e emite o evento `reading`
 apenas para a room `unit:<unitId>` assinada pelo cliente.
 
+### API do R05 — estado de consumo por unidade
+
+Complementa o WebSocket: o WebSocket entrega **cada leitura nova**; estas rotas dao o
+**estado atual**, usado ao abrir o painel e para recalcular. Todas exigem token e sao
+liberadas aos quatro perfis.
+
+| Rota | Descricao |
+|---|---|
+| `GET /water-status` | Estado de cada unidade conhecida (com leitura ou com sensor vinculado), ordenado por `unitId`. |
+| `GET /water-status/:unitId` | Estado de uma unidade. Sem nenhuma leitura devolve `no-data` (nao ha cadastro de unidades). |
+
+Resposta (`UnitConsumptionStatus`, em `@ciclo-azul/contracts`): `unitId`, `state`,
+`currentValueInLiters`, `lastReadingAt`, `lastReadingType` e `staleAfterMinutes`.
+
+- **`live`:** a ultima leitura tem ate **15 minutos** (exatamente 15 ainda e `live`).
+- **`stale`:** a ultima leitura tem **mais de 15 minutos** — exibir **"Sem dados
+  recentes"**. O ultimo valor conhecido continua na resposta.
+- **`no-data`:** a unidade nunca teve leitura (ex.: sensor vinculado que ainda nao
+  enviou nada).
+- "Ultima leitura" e a de maior **timestamp da medicao**, nao a ultima a chegar.
+  Leituras manuais contam como qualquer outra.
+
+**A transicao para "Sem dados recentes" nao e emitida pelo WebSocket** (a regra e
+calculada na consulta, ver `docs/contrato-iot.md`, secao 5). O cliente deve recalcular
+com `lastReadingAt` e `staleAfterMinutes` (ou consultar de novo) em intervalos curtos.
+
 ### Autenticacao e autorizacao
 
 - **Toda rota exige token OIDC valido** (Keycloak), via `JwtAuthGuard` global.

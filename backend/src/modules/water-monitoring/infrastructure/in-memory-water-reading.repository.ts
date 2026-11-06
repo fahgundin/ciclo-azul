@@ -17,8 +17,29 @@ export class InMemoryWaterReadingRepository implements WaterReadingRepository {
   }
 
   async findLatestByUnit(unitId: string): Promise<WaterReading | null> {
-    const list = this.readings.filter((r) => r.unitId === unitId);
-    return list.at(-1) ?? null;
+    return this.latestOf(this.readings.filter((r) => r.unitId === unitId));
+  }
+
+  async findLatestPerUnit(): Promise<WaterReading[]> {
+    const latestByUnit = new Map<string, WaterReading>();
+    for (const reading of this.readings) {
+      const current = latestByUnit.get(reading.unitId);
+      if (!current || reading.timestamp.getTime() >= current.timestamp.getTime()) {
+        latestByUnit.set(reading.unitId, reading);
+      }
+    }
+    return [...latestByUnit.values()];
+  }
+
+  /** A mais recente por TIMESTAMP da medicao (nao pela ordem de insercao). */
+  private latestOf(list: WaterReading[]): WaterReading | null {
+    let latest: WaterReading | null = null;
+    for (const reading of list) {
+      if (!latest || reading.timestamp.getTime() >= latest.timestamp.getTime()) {
+        latest = reading;
+      }
+    }
+    return latest;
   }
 
   async findByUnit(unitId: string): Promise<WaterReading[]> {

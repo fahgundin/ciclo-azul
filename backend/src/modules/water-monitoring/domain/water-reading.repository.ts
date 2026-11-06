@@ -8,6 +8,8 @@ import type { WaterReading } from './water-reading';
 export interface WaterReadingRepository {
   save(reading: WaterReading): Promise<void>;
   findLatestByUnit(unitId: string): Promise<WaterReading | null>;
+  /** Ultima leitura (por timestamp) de cada unidade que ja teve alguma leitura. */
+  findLatestPerUnit(): Promise<WaterReading[]>;
   /** Historico de leituras da unidade, da mais recente para a mais antiga. */
   findByUnit(unitId: string): Promise<WaterReading[]>;
 }
