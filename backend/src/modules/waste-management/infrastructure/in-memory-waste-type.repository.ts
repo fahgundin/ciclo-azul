@@ -18,4 +18,8 @@ export class InMemoryWasteTypeRepository implements WasteTypeRepository {
   async findAll(): Promise<WasteType[]> {
     return [...this.items];
   }
+
+  async findById(id: string): Promise<WasteType | null> {
+    return this.items.find((item) => item.id === id) ?? null;
+  }
 }

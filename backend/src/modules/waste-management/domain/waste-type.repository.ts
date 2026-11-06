@@ -7,6 +7,8 @@ import type { WasteType } from './waste-type';
 export interface WasteTypeRepository {
   save(wasteType: WasteType): Promise<void>;
   findAll(): Promise<WasteType[]>;
+  /** Tipo de residuo pelo id, ou null se nao existir. */
+  findById(id: string): Promise<WasteType | null>;
 }
 
 /** Token de injecao para o port. */

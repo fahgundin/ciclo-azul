@@ -64,6 +64,30 @@ invalido (3 a 64 caracteres; `manual` e reservado). O contrato dos payloads esta
 vinculo operador↔unidade, retificacao de leitura com justificativa e desvinculo de
 sensor.
 
+### API do R06 — destinacao de lotes de residuos
+
+| Rota | Papeis | Descricao |
+|---|---|---|
+| `POST /waste-lots` | gestor-ambiental | Registra a destinacao de um lote; o lote nasce **Destinado**. |
+| `GET /waste-lots` | gestor-ambiental, diretoria | Lista os lotes (data de destinacao mais recente primeiro). |
+
+Corpo do `POST` (`RegisterDisposalInput`, em `@ciclo-azul/contracts`):
+`wasteTypeId`, `location`, `receiverCompany`, `license`, `date`, `quantity`,
+`proofReference`. Todos os erros de validacao respondem `400` com a mensagem do
+dominio, na ordem: tipo, local, empresa, licenca, data, quantidade e comprovante.
+
+- **Comprovante obrigatorio:** sem ele, `400` com
+  `"O comprovante de destinação é obrigatório"` (criterio de aceitacao do R06). E uma
+  **referencia** (texto ou URL do documento); upload de arquivo nao faz parte desta
+  versao.
+- `wasteTypeId` deve ser um tipo ja cadastrado (R07); senao `400`
+  `"Tipo de resíduo não encontrado"`.
+- `quantity` maior que zero; `date` valida e **nao futura**.
+
+**Ainda nao cobre** (ver `docs/migracao-frontend.md`): licenca valida da empresa
+receptora, dupla confirmacao para residuo perigoso, unidade de medida da quantidade
+e lotes sem destinacao (R08).
+
 ### Fluxo de ingestao e tempo real
 
 ```
