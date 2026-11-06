@@ -39,6 +39,31 @@ definido usam **Postgres** (TypeORM); sem ele, caem no **in-memory** (dev/testes
 As entidades ORM e mappers ficam em `infrastructure/persistence/` — o dominio nao
 conhece o ORM. `synchronize` so em dev; migrations reais para producao sao pendencia.
 
+### API do R04 — sensores e leituras manuais
+
+Toda rota exige token (guard global); o papel e checado por `@Roles`.
+
+| Rota | Papeis | Descricao |
+|---|---|---|
+| `POST /sensors` | operador, administrador | Vincula um sensor a uma unidade (`{ sensorId, unitId }`); fica "Conectado". |
+| `GET /sensors` | todos | Lista os sensores vinculados. |
+| `POST /water-readings/manual` | operador | Lanca leitura manual (`{ unitId, valueInLiters, date }`). |
+| `GET /water-readings?unitId=` | todos | Historico de consumo da unidade (mais recente primeiro). |
+
+Regras da leitura manual (dominio, `domain/manual-reading.ts`):
+
+- so em unidade **sem sensor vinculado** (senao `409`);
+- volume **maior que zero** (senao `400`);
+- data **entre hoje e 28 dias atras**, contados do inicio do dia UTC (senao `400`).
+
+Tambem `409` ao vincular um sensor ja vinculado e `400` para identificador de sensor
+invalido (3 a 64 caracteres; `manual` e reservado). O contrato dos payloads esta em
+`@ciclo-azul/contracts` (`sensor.ts`).
+
+**Ainda nao cobre** (ver `docs/migracao-frontend.md`): cadastro de unidades,
+vinculo operador↔unidade, retificacao de leitura com justificativa e desvinculo de
+sensor.
+
 ### Fluxo de ingestao e tempo real
 
 ```

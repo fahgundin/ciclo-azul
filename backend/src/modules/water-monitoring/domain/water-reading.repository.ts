@@ -8,6 +8,8 @@ import type { WaterReading } from './water-reading';
 export interface WaterReadingRepository {
   save(reading: WaterReading): Promise<void>;
   findLatestByUnit(unitId: string): Promise<WaterReading | null>;
+  /** Historico de leituras da unidade, da mais recente para a mais antiga. */
+  findByUnit(unitId: string): Promise<WaterReading[]>;
 }
 
 /** Token de injecao para o port (resolvido via DI do NestJS). */

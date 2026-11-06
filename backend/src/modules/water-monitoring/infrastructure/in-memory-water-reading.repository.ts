@@ -20,4 +20,10 @@ export class InMemoryWaterReadingRepository implements WaterReadingRepository {
     const list = this.readings.filter((r) => r.unitId === unitId);
     return list.at(-1) ?? null;
   }
+
+  async findByUnit(unitId: string): Promise<WaterReading[]> {
+    return this.readings
+      .filter((r) => r.unitId === unitId)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
 }
