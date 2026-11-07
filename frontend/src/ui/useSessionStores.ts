@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import { InMemoryLimitStore, type LimitStore } from '../core/limits/limits';
+import { InMemoryAppliedStore, type AppliedStore } from '../core/reuse/opportunities';
 import { InMemoryPendingLotStore, type PendingLotStore } from '../core/waste/pending-lot';
 
-/** ADAPTERS EM MEMORIA (R03, R08): um conjunto por sessao de login. */
+/** ADAPTERS EM MEMORIA (R02, R03, R08): um conjunto por sessao de login. */
 export interface SessionStores {
   limitStore: LimitStore;
   pendingLotStore: PendingLotStore;
+  appliedStore: AppliedStore;
 }
 
 function createSessionStores(): SessionStores {
   return {
     limitStore: new InMemoryLimitStore(),
     pendingLotStore: new InMemoryPendingLotStore(),
+    appliedStore: new InMemoryAppliedStore(),
   };
 }
 

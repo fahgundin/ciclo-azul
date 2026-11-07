@@ -198,3 +198,42 @@
   color: var(--color-primary-700);
   border-bottom-color: var(--color-primary-500);
 }
+
+/* Cartao de oportunidade (reuso) e resumo */
+.opportunity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+}
+
+.opportunity h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.opportunity p {
+  margin: 0;
+}
+
+.opportunity__head,
+.opportunity__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.opportunity__saving {
+  color: var(--color-primary-900);
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.opportunity__saving small {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}

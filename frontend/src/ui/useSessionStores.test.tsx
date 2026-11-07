@@ -22,14 +22,14 @@ describe('useSessionStores', () => {
     });
     const first = result.current;
     first.limitStore.save({ general: 500, units: {} });
-    first.pendingLotStore.add({ wasteTypeId: 'wt-1', quantity: 1, deadlineDays: 30 }, new Date());
+    first.appliedStore.apply('purge-dc-sp1');
 
     rerender({ key: null });
     rerender({ key: 'marina@ciclo.azul' });
 
     expect(result.current).not.toBe(first);
     expect(result.current.limitStore.get().general).toBeNull();
-    expect(result.current.pendingLotStore.list()).toEqual([]);
+    expect(result.current.appliedStore.has('purge-dc-sp1')).toBe(false);
   });
 
   it('recria os adapters ao trocar de usuario', () => {
