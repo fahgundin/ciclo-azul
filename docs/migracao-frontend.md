@@ -35,7 +35,7 @@
 |---|---|---|---|
 | Shell, navegação e rotas por perfil | — | #38 | Entregue |
 | Tipos de resíduo (R07) | `/residuos` | #25 | Entregue (antes da migração) |
-| Sensores e leitura manual (R04) | `/sensores` | #39 | A fazer |
+| Sensores e leitura manual (R04) | `/sensores` | #39 | Entregue, sobre a API real (com as lacunas abaixo) |
 | Água em tempo real (R05) | `/agua` | #40 | A fazer |
 | Lotes e destinação (R06) | `/residuos` | #41 | A fazer |
 | Relatórios (R09) | `/relatorios` | #42 | A fazer |
@@ -69,7 +69,7 @@ R06, #8). Ver `backend/README.md`. Não existem endpoints REST para:
 - trilha de auditoria (RNF02).
 
 Cada tela correspondente usará um adapter em memória até o endpoint existir. A tela
-de sensores (#39) já pode trocar o adapter pela API do R04, com as lacunas abaixo.
+de sensores (#39) usa a API real do R04, com as lacunas abaixo.
 
 ### Lacunas do R04 em relação ao protótipo
 
@@ -85,6 +85,45 @@ de fora, por falta de base no backend (AGENTS §7):
 - **Retificação** de leitura com justificativa mínima, preservando o valor original:
   depende de trilha de auditoria (RNF02) e não foi implementada.
 - **Desvincular** sensor: não faz parte dos critérios do R04.
+
+Efeitos na tela de sensores (#39), que difere do protótipo nestes pontos:
+
+- **Dados do sensor:** o backend guarda só `sensorId`, `unitId`, status "Conectado"
+  e data de vínculo. Nome do dispositivo, sistema de refrigeração e protocolo do
+  protótipo não existem na API e não são exibidos nem pedidos no formulário.
+- **Conectar / desconectar:** só há vínculo ("Conectar sensor"). O botão
+  Desconectar/Reconectar do protótipo não existe, pelo mesmo motivo do item
+  "Desvincular".
+- **Unidades:** sem cadastro de unidades, o formulário recebe o identificador da
+  unidade digitado (com sugestões das unidades que já têm sensor). A tela mostra o
+  que o backend aceita; a validação de formato do identificador do sensor é só do
+  backend e sua mensagem é exibida como veio.
+- **Histórico de leituras manuais:** `GET /water-readings` exige `unitId`, então o
+  histórico é por unidade, escolhida por quem consulta. Unidades que só têm leitura
+  manual não aparecem sozinhas: só ficam sugeridas após um lançamento na sessão.
+- **Unidade de medida:** a API usa **litros**; o protótipo usava m³. A tela informa e
+  exibe litros.
+- **Datas de leitura manual:** são datas de calendário gravadas à meia-noite UTC; a
+  tela as exibe em UTC para não aparecerem um dia antes no fuso do Brasil.
+- **Perfis (inconsistência entre documentação e backend):** a tela `/sensores` é
+  exclusiva do **Operador**. Decisão: seguir a documentação de produto, não o
+  backend. O motivo é uma divergência que ficou registrada aqui:
+  - **Documentação de produto** só prevê o Operador: `escopo.md` (R04, perfil
+    Operador) e a HU02 em `historias-de-usuario.md` ("Como um Operador"; os cenários
+    de conectar sensor e de leitura manual começam com "estou autenticado como
+    Operador"). O protótipo também dá `sensors.manage` só ao Operador.
+  - **Backend** aceita **Operador e Administrador** em `POST /sensors`
+    (`@Roles(OPERADOR, ADMINISTRADOR)`, listado assim no `backend/README.md`). Nenhum
+    documento de produto justifica o Administrador; parece ter sido acrescentado na
+    implementação, sem registro do motivo. A leitura manual (`POST
+    /water-readings/manual`) é só do Operador, coerente com a documentação.
+  - **Efeito:** um Administrador consegue vincular sensor chamando a API
+    diretamente, mas não vê a tela. Como a autorização real é do backend, o
+    frontend não "bloqueia" nada; apenas não oferece a tela.
+  - **A decidir pela equipe** (sem mudar nada antes disso): (a) manter assim;
+    (b) liberar a tela ao Administrador e atualizar a HU02; ou (c) restringir o
+    backend ao Operador, em issue própria. Se (b), basta conceder a permissão
+    `sensors.manage` ao perfil em `core/auth/permissions.ts`.
 
 ### Lacunas do R06 em relação ao protótipo
 

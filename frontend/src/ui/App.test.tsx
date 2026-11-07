@@ -64,8 +64,18 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Tipos de resíduo' })).toBeInTheDocument();
   });
 
-  it('perfil sem telas prontas (Operador) ve "Em construcao" e nao chama a API', () => {
+  it('Operador logado cai em Sensores e carrega os sensores com o token', async () => {
     login(['operador']);
+    renderApp();
+
+    expect(await screen.findByRole('heading', { name: 'Sensores IoT' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Sensores' })).toHaveAttribute('aria-current', 'page');
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/sensors');
+  });
+
+  it('perfil sem telas prontas (Diretoria) ve "Em construcao" e nao chama a API', () => {
+    login(['diretoria']);
     renderApp();
     expect(screen.getByRole('heading', { name: 'Em construção' })).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();

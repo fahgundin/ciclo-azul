@@ -1,0 +1,168 @@
+/*
+ * Pecas reutilizaveis das telas: pagina, secoes, listas, etiquetas e formularios.
+ * Usa os tokens de theme.css. Mobile-first.
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+
+.page__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.page__section > h2 {
+  margin: var(--space-1) 0 0;
+  font-size: 1.05rem;
+}
+
+.muted {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+@media (min-width: 640px) {
+  .actions {
+    flex-direction: row;
+  }
+}
+
+/* Botao primario (o neutro e .btn, em shell.css). */
+.btn.btn--primary {
+  border: none;
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn:disabled,
+.btn.btn--primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Lista em vidro, com linhas separadas. */
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+}
+
+.list > li {
+  padding: 0.8rem var(--space-2);
+}
+
+.list > li + li {
+  border-top: 1px solid var(--color-primary-100);
+}
+
+.item__title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.item__meta {
+  margin-top: 0.15rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.list-empty {
+  color: var(--color-text-muted);
+}
+
+/* Etiqueta de estado: sempre icone + texto, nunca so cor. */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.4rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--color-primary-300);
+  border-radius: 999px;
+  background: var(--color-primary-50);
+  color: var(--color-primary-800);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* Formularios */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.field__input {
+  width: 100%;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid var(--color-primary-200);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 400;
+  /* 1rem evita o zoom automatico do iOS ao focar. */
+  font-size: 1rem;
+}
+
+.field__input[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.field__error {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.form-alert {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.code {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  overflow-x: auto;
+  border: 1px solid var(--color-primary-100);
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-50);
+  color: var(--color-text);
+  font: 500 0.8rem/1.5 ui-monospace, Menlo, Consolas, monospace;
+}

@@ -1,7 +1,7 @@
 import type { IconName } from '../../core/navigation/routes';
 
 /** Icones usados so pela UI (alem dos da navegacao, definidos em core/). */
-export type UiIconName = IconName | 'logout' | 'x' | 'info' | 'alert' | 'check';
+export type UiIconName = IconName | 'logout' | 'x' | 'info' | 'alert' | 'check' | 'plus';
 
 /* Icones de traco, 24x24 (desenhos do prototipo, tracos arredondados). */
 const PATHS: Record<UiIconName, string> = {
@@ -20,6 +20,7 @@ const PATHS: Record<UiIconName, string> = {
   info: 'M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0ZM12 11v5.5M12 7.8v.1',
   alert: 'M12 3.5 2.5 20h19L12 3.5ZM12 10v4.5M12 17.4v.1',
   check: 'm5 12.5 4.5 4.5L19 7.5',
+  plus: 'M12 5v14M5 12h14',
 };
 
 /** Icone decorativo (aria-hidden): o texto acessivel fica no elemento que o contem. */
