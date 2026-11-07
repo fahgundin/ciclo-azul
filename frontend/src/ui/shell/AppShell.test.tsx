@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { APP_ROLES, type AppRole } from '../../core/auth/roles';
 import type { TokenUser } from '../../core/auth/token';
+import { useUser } from '../UserContext';
 import { AppShell, type PageRegistry } from './AppShell';
 
 const pages: PageRegistry = {
@@ -149,5 +150,17 @@ describe('AppShell — conta do usuario', () => {
 
     expect(onLogout).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('AppShell — usuario para as paginas', () => {
+  it('disponibiliza o usuario autenticado via useUser()', () => {
+    function WhoAmI() {
+      return <p>Logada: {useUser()?.name}</p>;
+    }
+    renderShell(userWith([APP_ROLES.GESTOR_AMBIENTAL]), '/agua', {
+      registry: { '/agua': <WhoAmI /> },
+    });
+    expect(screen.getByText('Logada: Marina Costa')).toBeInTheDocument();
   });
 });

@@ -38,7 +38,7 @@
 | Sensores e leitura manual (R04) | `/sensores` | #39 | Entregue, sobre a API real (com as lacunas abaixo) |
 | Água em tempo real (R05) | `/agua` | #40 | A fazer |
 | Lotes e destinação (R06) | `/residuos` | #41 | Entregue, sobre a API real (com as lacunas abaixo) |
-| Relatórios (R09) | `/relatorios` | #42 | A fazer |
+| Relatórios (R09) | `/relatorios` | #42 | Entregue, **gerado no navegador** (sem endpoint no backend) |
 | Limites e alertas (R03/R08) | `/alertas` | #43 | A fazer |
 | Reuso (R02) | `/insights` | #44 | A fazer |
 | Painel de KPIs (R10) | `/painel` | #45 | A fazer |
@@ -164,6 +164,44 @@ Efeitos na tela de resíduos (#41), que difere do protótipo nestes pontos:
 - **Perfis:** o backend deixa a Diretoria *consultar* os lotes (`GET /waste-lots`), mas
   a rota `/residuos` segue restrita ao Gestor Ambiental (ver "Leitura de tipos de
   resíduo pela Diretoria", abaixo).
+
+### Relatórios (R09) — adapter no cliente
+
+**Anotação: esta tela NÃO usa endpoint de relatórios.** O backend do R09 (#10) está
+aberto. O relatório de conformidade é **montado no navegador** a partir das APIs reais
+que já existem (`/sensors`, `/water-readings`, `/waste-lots`, `/waste-types`). O ponto
+de troca é `core/reports/report.ts` (`buildReport`) e a porta `ReportDataSource`
+(`core/reports/report-data-source.ts`): quando houver endpoint, a fonte de dados passa a
+chamá-lo e o restante da tela continua.
+
+Como funciona:
+
+- **Tipos:** conformidade completa, consumo de água e destinação de resíduos. **Período:**
+  últimos 7, 30 ou 90 dias.
+- **PDF:** pela impressão do navegador ("Salvar como PDF"), sem biblioteca de PDF. A
+  área de impressão mostra só o relatório (`ui/styles/reports.css`).
+- **CSV:** separador `;`, BOM e vírgula decimal, para o Excel pt-BR. Textos que começam
+  com `=`, `+`, `-` ou `@` recebem um apóstrofo, para não virarem fórmula na planilha.
+- **Histórico de exportações:** só da sessão atual, **em memória** (a trilha de
+  auditoria, RNF02, não existe).
+- A tela exibe uma observação visível dizendo que o relatório é gerado no navegador.
+
+Diferenças em relação ao protótipo e limites conhecidos:
+
+- **Itens verificados:** só fatos que os dados permitem confirmar: comprovante e licença
+  informados em toda destinação; unidades com leitura nos últimos 15 minutos; consumo
+  registrado em todas as unidades no período. Não há "licença válida na data", "dupla
+  confirmação" nem "dentro do prazo de destinação" (sem base no backend).
+- **Sem reuso nem limite diário** no consumo (R02 e R03 sem backend).
+- **Unidades:** só entram as unidades com sensor vinculado (não há cadastro de
+  unidades). Unidades que só têm leitura manual ficam de fora.
+- **Consumo do período:** é a **soma** dos valores das leituras do período, em litros.
+  Isso supõe leituras incrementais; o significado exato do `value` da leitura (volume
+  por intervalo ou acumulado) precisa ser confirmado em `contrato-iot.md`. Pendência.
+- **Volume de dados:** o histórico de cada unidade é baixado inteiro. Para muitas
+  leituras, será preciso filtrar por período no backend.
+- **Geração e "assinatura" no servidor:** o protótipo já previa relatórios gerados no
+  servidor; a geração no cliente não tem valor de prova perante órgãos fiscalizadores.
 
 ### Classificação dos tipos de resíduo
 
