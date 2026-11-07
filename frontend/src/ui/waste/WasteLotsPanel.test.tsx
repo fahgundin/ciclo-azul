@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { afterEach, describe, it, expect, vi } from 'vitest';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { WasteLotView, WasteTypeView } from '@ciclo-azul/contracts';
 import { ApiError } from '../../core/api/api-error';
@@ -158,6 +158,41 @@ describe('WasteLotsPanel — lotes aguardando destinacao (R08, adapter em memori
     setup({ pendingStore });
     const list = await screen.findByRole('list', { name: 'Lotes aguardando destinação' });
     expect(within(list).getByText('Prazo vencido')).toBeInTheDocument();
+  });
+
+  // Revisao do #57: a etiqueta era calculada so na renderizacao e nao mudava sozinha.
+  describe('relogio da etiqueta de prazo', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('um lote que vence com a tela aberta passa de "No prazo" para "Prazo vencido" sozinho', async () => {
+      vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
+      let current = new Date(2026, 10, 1, 12, 0);
+      const pendingStore = new InMemoryPendingLotStore();
+      pendingStore.add({ wasteTypeId: 'wt-1', quantity: 5, deadlineDays: 1 }, current);
+      const lotApi = { list: vi.fn().mockResolvedValue([]) } as unknown as WasteLotApi;
+      const wasteApi = { list: vi.fn().mockResolvedValue(TYPES) } as unknown as WasteTypeApi;
+      render(
+        <FlashProvider>
+          <WasteLotsPanel
+            lotApi={lotApi}
+            wasteApi={wasteApi}
+            pendingStore={pendingStore}
+            now={() => current}
+            tickMs={60_000}
+          />
+        </FlashProvider>,
+      );
+      const list = await screen.findByRole('list', { name: 'Lotes aguardando destinação' });
+      expect(within(list).getByText('No prazo')).toBeInTheDocument();
+
+      current = new Date(2026, 10, 2, 12, 1); // 1 dia e 1 minuto depois: o prazo de 1 dia venceu
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+
+      expect(within(list).getByText('Prazo vencido')).toBeInTheDocument();
+      expect(within(list).queryByText('No prazo')).not.toBeInTheDocument();
+    });
   });
 
   it('registrar a destinacao de um lote pendente preenche o formulario, grava na API e remove o pendente', async () => {

@@ -44,6 +44,19 @@ describe('buildChart', () => {
     expect(chart.xTicks[2]?.x).toBe(CHART.width - CHART.right);
   });
 
+  it('o rotulo do meio fica no instante medio, mesmo com leituras agrupadas num extremo', () => {
+    const chart = buildChart([
+      { t: 0, v: 1 },
+      { t: 10, v: 1 },
+      { t: 20, v: 1 },
+      { t: 1000, v: 1 },
+    ])!;
+    const [, middle] = chart.xTicks;
+    expect(middle!.t).toBe(500);
+    const plot = CHART.width - CHART.left - CHART.right;
+    expect(middle!.x).toBeCloseTo(CHART.left + plot / 2, 5);
+  });
+
   it('usa um maximo "bonito" acima do maior valor e 5 marcas no eixo Y', () => {
     const chart = buildChart(points)!;
     expect(chart.maxValue).toBe(200); // 100 * 1,1 = 110 -> 200

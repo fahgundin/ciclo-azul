@@ -78,10 +78,47 @@ describe('ReusePage (R02 / HU05)', () => {
 
   it('mostra o potencial de economia somado', async () => {
     setup();
-    const summary = await screen.findByLabelText('Resumo');
+    const summary = await screen.findByRole('region', { name: 'Resumo' });
     expect(summary).toHaveTextContent('Potencial de economia');
     expect(summary).toHaveTextContent('57.000 L/mês');
     expect(summary).toHaveTextContent('3 oportunidade(s) em aberto');
+  });
+
+  // Revisao do #58: o resumo e o numero de destaque e nao pode parecer economia medida.
+  it('o resumo se declara estimado (demonstracao) e avisa que a soma pode superestimar', async () => {
+    setup();
+    const summary = await screen.findByRole('region', { name: 'Resumo' });
+    expect(summary).toHaveTextContent('estimado — demonstração');
+    expect(summary).toHaveTextContent('não são independentes');
+    expect(summary).toHaveTextContent('Nada aqui é economia medida');
+  });
+
+  it('unidade com historico mas sensor parado aparece em "Sem leituras recentes"', async () => {
+    setup({
+      units: ['dc-parado'],
+      readings: {
+        'dc-parado': [
+          {
+            sensorId: 'sn',
+            unitId: 'dc-parado',
+            timestamp: new Date(NOW.getTime() - 20 * DAY).toISOString(),
+            valueInLiters: 5,
+            readingType: 'sensor',
+          },
+          {
+            sensorId: 'sn',
+            unitId: 'dc-parado',
+            timestamp: new Date(NOW.getTime() - 15 * DAY).toISOString(),
+            valueInLiters: 5,
+            readingType: 'sensor',
+          },
+        ],
+      },
+    });
+    const list = await screen.findByRole('list', { name: 'Unidades sem leituras recentes' });
+    expect(list).toHaveTextContent('dc-parado');
+    expect(list).toHaveTextContent('mais de 24 horas');
+    expect(screen.queryByRole('article')).not.toBeInTheDocument();
   });
 
   // Cenario: Indicar ausencia de dados suficientes
@@ -139,10 +176,10 @@ describe('ReusePage (R02 / HU05)', () => {
     const applied = screen.getByRole('heading', { name: 'Já aplicadas' }).closest('section')!;
     expect(within(applied).getByRole('article')).toHaveTextContent('Aplicada');
     expect(within(applied).queryByRole('button', { name: 'Aplicar' })).not.toBeInTheDocument();
-    const summary = screen.getByLabelText('Resumo');
+    const summary = screen.getByRole('region', { name: 'Resumo' });
     expect(summary).toHaveTextContent('33.000 L/mês'); // 57.000 - 24.000
     expect(summary).toHaveTextContent('2 oportunidade(s) em aberto');
-    expect(summary).toHaveTextContent('24.000 L/mês já aplicados');
+    expect(summary).toHaveTextContent('24.000 L/mês marcados como aplicados (estimativa)');
     expect(screen.getByRole('status')).toHaveTextContent('Oportunidade marcada como aplicada.');
   });
 
@@ -179,5 +216,24 @@ describe('ReusePage (R02 / HU05)', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Falha ao carregar o histórico de consumo',
     );
+  });
+
+  // Revisao do #58: a carga rodava so na montagem; falhou, so recarregando a pagina.
+  it('apos uma falha, "Tentar de novo" refaz a busca e limpa o erro', async () => {
+    const list = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValue([status('dc-sp1')]);
+    const { user } = setup({ list });
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Falha ao carregar o histórico de consumo',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Tentar de novo' }));
+
+    expect(await screen.findAllByRole('article')).not.toHaveLength(0);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Tentar de novo' })).not.toBeInTheDocument();
+    expect(list).toHaveBeenCalledTimes(2);
   });
 });

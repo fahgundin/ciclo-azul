@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   HISTORY_WINDOW_DAYS,
   InMemoryAppliedStore,
+  LOW_CONFIDENCE_DAYS,
+  MAX_LAST_READING_AGE_HOURS,
   MIN_HISTORY_HOURS,
   analyzeReuse,
   sumSavings,
@@ -90,13 +92,14 @@ describe('analyzeReuse — historico insuficiente (HU05, cenario 2)', () => {
   });
 
   it('exatamente 24 horas de historico ja basta; um instante menos, nao', () => {
+    // O historico e medido da primeira a ULTIMA leitura (nao ate agora).
     const ok: UnitHistory = {
       unitId: 'a',
-      readings: [at(MIN_HISTORY_HOURS * HOUR, 100), at(HOUR, 100)],
+      readings: [at((MIN_HISTORY_HOURS + 1) * HOUR, 100), at(HOUR, 100)],
     };
     const short: UnitHistory = {
       unitId: 'b',
-      readings: [at(MIN_HISTORY_HOURS * HOUR - 1000, 100), at(HOUR, 100)],
+      readings: [at((MIN_HISTORY_HOURS + 1) * HOUR - 1000, 100), at(HOUR, 100)],
     };
     expect(analyzeReuse([ok], NOW).insufficient).toEqual([]);
     expect(analyzeReuse([short], NOW).insufficient).toEqual(['b']);
@@ -114,6 +117,29 @@ describe('analyzeReuse — historico insuficiente (HU05, cenario 2)', () => {
     expect(insufficient).toEqual(['parada', 'vazia']);
   });
 
+  // Bug da revisao do #58: o historico era medido ate AGORA, entao sensor parado ainda recebia dica.
+  it('duas leituras com mais de 24 h entre si, mas o sensor parou: o historico NAO conta ate agora', () => {
+    const stoppedLong: UnitHistory = {
+      unitId: 'parado',
+      readings: [at(20 * DAY, 100), at(19 * DAY, 100)],
+    };
+    const { opportunities, insufficient, stale } = analyzeReuse([stoppedLong], NOW);
+    expect(opportunities).toEqual([]);
+    expect(insufficient).toEqual([]);
+    expect(stale).toEqual(['parado']);
+  });
+
+  it('exige leitura recente: a ultima pode ter no maximo 24 h; um instante a mais e a unidade fica de fora', () => {
+    const base = (lastAgo: number): UnitHistory => ({
+      unitId: 'u',
+      readings: [at(10 * DAY, 100), at(lastAgo, 100)],
+    });
+    expect(analyzeReuse([base(MAX_LAST_READING_AGE_HOURS * HOUR)], NOW).stale).toEqual([]);
+    expect(analyzeReuse([base(MAX_LAST_READING_AGE_HOURS * HOUR + 1000)], NOW).stale).toEqual([
+      'u',
+    ]);
+  });
+
   it('mistura: recomenda para quem tem historico e lista as demais', () => {
     const { opportunities, insufficient } = analyzeReuse(
       [unit('dc-sp1', 10, 1000), { unitId: 'dc-rs5', readings: [at(HOUR, 1)] }],
@@ -121,6 +147,19 @@ describe('analyzeReuse — historico insuficiente (HU05, cenario 2)', () => {
     );
     expect(opportunities.every((o) => o.unitId === 'dc-sp1')).toBe(true);
     expect(insufficient).toEqual(['dc-rs5']);
+  });
+});
+
+describe('analyzeReuse — confianca da estimativa', () => {
+  it('avisa baixa confianca quando o mensal e extrapolado de poucos dias', () => {
+    const { opportunities } = analyzeReuse([unit('dc-sp1', 2, 1000)], NOW);
+    expect(opportunities[0]!.evidence).toContain('Baixa confiança');
+    expect(opportunities[0]!.evidence).toContain('extrapolado de apenas 2 dia(s)');
+  });
+
+  it('nao avisa quando ha pelo menos 7 dias de leituras', () => {
+    const { opportunities } = analyzeReuse([unit('dc-sp1', LOW_CONFIDENCE_DAYS, 1000)], NOW);
+    expect(opportunities.every((o) => !o.evidence.includes('Baixa confiança'))).toBe(true);
   });
 });
 

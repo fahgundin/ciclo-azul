@@ -15,6 +15,16 @@ import type { ChartPoint } from '../water/consumption';
 /** Historico minimo (horas) para recomendar. Valor de demonstracao: criterio oficial a definir. */
 export const MIN_HISTORY_HOURS = 24;
 
+/**
+ * Idade maxima (horas) da ULTIMA leitura para recomendar. Unidade parada ha mais que
+ * isso nao recebe recomendacao: o historico estaria desatualizado e o consumo mensal
+ * ficaria diluido pelo periodo sem leituras. Valor de demonstracao.
+ */
+export const MAX_LAST_READING_AGE_HOURS = 24;
+
+/** Abaixo disso (dias de leituras) a estimativa mensal e uma extrapolacao fragil: leva aviso. */
+export const LOW_CONFIDENCE_DAYS = 7;
+
 /** Janela de historico usada para estimar o consumo mensal. */
 export const HISTORY_WINDOW_DAYS = 30;
 
@@ -44,6 +54,8 @@ export interface ReuseAnalysis {
   opportunities: Opportunity[];
   /** Unidades sem historico suficiente para gerar recomendacoes. */
   insufficient: string[];
+  /** Unidades com historico, mas sem leitura recente (a ultima e antiga demais). */
+  stale: string[];
 }
 
 interface CatalogEntry {
@@ -103,27 +115,40 @@ interface UnitBase {
   monthly: number;
 }
 
-/** Consumo-base da unidade, ou `null` se o historico nao basta. */
-function baseOf(history: UnitHistory, now: Date): UnitBase | null {
+type BaseResult =
+  | { status: 'ok'; base: UnitBase }
+  | { status: 'insufficient' }
+  | { status: 'stale' };
+
+/** Consumo-base da unidade, ou o motivo de nao haver (historico curto ou sem leitura recente). */
+function baseOf(history: UnitHistory, now: Date): BaseResult {
   const end = now.getTime();
   const inWindow = history.readings.filter(
     (p) => p.t <= end && p.t >= end - HISTORY_WINDOW_DAYS * DAY_MS,
   );
   if (inWindow.length < 2) {
-    return null;
+    return { status: 'insufficient' };
   }
   const first = Math.min(...inWindow.map((p) => p.t));
-  if (end - first < MIN_HISTORY_HOURS * HOUR_MS) {
-    return null;
+  const last = Math.max(...inWindow.map((p) => p.t));
+  if (last - first < MIN_HISTORY_HOURS * HOUR_MS) {
+    return { status: 'insufficient' };
+  }
+  // Sensor parado: a ultima leitura e antiga demais para recomendar com base no que ele mediu.
+  if (end - last > MAX_LAST_READING_AGE_HOURS * HOUR_MS) {
+    return { status: 'stale' };
   }
   const days = Math.min(HISTORY_WINDOW_DAYS, (end - first) / DAY_MS);
   const total = inWindow.reduce((sum, p) => sum + p.v, 0);
   return {
-    unitId: history.unitId,
-    days,
-    total,
-    count: inWindow.length,
-    monthly: (total / days) * HISTORY_WINDOW_DAYS,
+    status: 'ok',
+    base: {
+      unitId: history.unitId,
+      days,
+      total,
+      count: inWindow.length,
+      monthly: (total / days) * HISTORY_WINDOW_DAYS,
+    },
   };
 }
 
@@ -131,10 +156,13 @@ function baseOf(history: UnitHistory, now: Date): UnitBase | null {
 export function analyzeReuse(units: readonly UnitHistory[], now: Date): ReuseAnalysis {
   const bases: UnitBase[] = [];
   const insufficient: string[] = [];
+  const stale: string[] = [];
   for (const unit of units) {
-    const base = baseOf(unit, now);
-    if (base) {
-      bases.push(base);
+    const result = baseOf(unit, now);
+    if (result.status === 'ok') {
+      bases.push(result.base);
+    } else if (result.status === 'stale') {
+      stale.push(unit.unitId);
     } else {
       insufficient.push(unit.unitId);
     }
@@ -161,7 +189,10 @@ export function analyzeReuse(units: readonly UnitHistory[], now: Date): ReuseAna
         evidence:
           `Consumo medido em ${days} dia(s): ${formatLiters(Math.round(base.total))} em ${base.count} leituras` +
           (entry.scope === 'top' ? '; unidade de maior consumo' : '') +
-          `. Economia = ${Math.round(entry.ratio * 100)}% do consumo mensal (referência de demonstração).`,
+          `. Economia = ${Math.round(entry.ratio * 100)}% do consumo mensal (referência de demonstração).` +
+          (base.days < LOW_CONFIDENCE_DAYS
+            ? ` Baixa confiança: o consumo mensal foi extrapolado de apenas ${days} dia(s) de leituras.`
+            : ''),
         monthlySavingLiters: Math.round(base.monthly * entry.ratio),
       });
     }
@@ -173,6 +204,7 @@ export function analyzeReuse(units: readonly UnitHistory[], now: Date): ReuseAna
   return {
     opportunities,
     insufficient: insufficient.sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    stale: stale.sort((a, b) => a.localeCompare(b, 'pt-BR')),
   };
 }
 

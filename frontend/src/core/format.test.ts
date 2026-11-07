@@ -29,6 +29,24 @@ describe('initials', () => {
   });
 });
 
+describe('formatNumber — valores minusculos', () => {
+  it('nao arredonda para zero um valor positivo pequeno', () => {
+    expect(formatNumber(0.004)).toBe('0,004');
+    expect(formatNumber(0.00432)).toBe('0,0043');
+    expect(formatNumber(-0.004)).toBe('-0,004');
+  });
+
+  it('zero continua zero e valores de 0,01 para cima seguem com duas casas', () => {
+    expect(formatNumber(0)).toBe('0');
+    expect(formatNumber(0.01)).toBe('0,01');
+    expect(formatNumber(10.12345)).toBe('10,12');
+  });
+
+  it('formatLiters tambem mostra o valor minusculo', () => {
+    expect(formatLiters(0.004)).toBe('0,004 L');
+  });
+});
+
 describe('formatLiters', () => {
   it('usa separadores pt-BR e a unidade L', () => {
     expect(formatLiters(1234.5)).toBe('1.234,5 L');

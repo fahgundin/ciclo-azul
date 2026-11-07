@@ -4,7 +4,12 @@ import type { WaterReadingApi } from '../../core/api/water-reading-api';
 import type { WaterStatusApi } from '../../core/api/water-status-api';
 import type { WasteTypeApi } from '../../core/api/waste-type-api';
 import { PERMISSIONS, can } from '../../core/auth/permissions';
-import { ALERT_KIND_LABEL, evaluateAlerts } from '../../core/alerts/alerts';
+import {
+  ALERT_KIND_LABEL,
+  evaluateAlerts,
+  limitLevel,
+  type LimitLevel,
+} from '../../core/alerts/alerts';
 import { formatLiters, formatNumber } from '../../core/format';
 import type { LimitStore } from '../../core/limits/limits';
 import type { PendingLotStore } from '../../core/waste/pending-lot';
@@ -39,13 +44,7 @@ interface AlertsPageProps {
 
 const ALL_READINGS = Number.POSITIVE_INFINITY;
 
-type Level = 'ok' | 'warn' | 'crit';
-
-function levelOf(used: number, limit: number): Level {
-  return used > limit ? 'crit' : used >= limit * 0.8 ? 'warn' : 'ok';
-}
-
-const LEVEL_TEXT: Record<Level, string> = {
+const LEVEL_TEXT: Record<LimitLevel, string> = {
   ok: 'Dentro do limite',
   warn: 'Perto do limite',
   crit: 'Limite excedido',
@@ -60,7 +59,7 @@ function LimitRow({
   used: number;
   limit: number;
 }): JSX.Element {
-  const level = levelOf(used, limit);
+  const level = limitLevel(used, limit);
   const percent = Math.round((used / limit) * 100);
   return (
     <li>
@@ -114,13 +113,17 @@ export function AlertsPage({
   const canSetLimits = can(user?.roles ?? [], PERMISSIONS.WATER_LIMITS);
   const canSeeWaste = can(user?.roles ?? [], PERMISSIONS.WASTE_TYPES);
 
-  const { statuses, loading, error, refresh, liveReadings } = useWaterStatus({
-    statusApi,
-    createRealtime,
-    getToken,
-    now,
-    tickMs,
-  });
+  // O consumo do dia SOMA as leituras: guarda todas as da sessao (sem o teto de 60 do
+  // grafico), senao as mais antigas sairiam da soma e o alerta de limite deixaria de disparar.
+  const { statuses, loading, refreshing, error, refresh, liveReadings, reconnects } =
+    useWaterStatus({
+      statusApi,
+      createRealtime,
+      getToken,
+      now,
+      tickMs,
+      maxLivePoints: ALL_READINGS,
+    });
   const [limits, setLimits] = useState(() => limitStore.get());
   const [limitsOpen, setLimitsOpen] = useState(false);
   const [histories, setHistories] = useState<Record<string, ChartPoint[]>>({});
@@ -153,7 +156,8 @@ export function AlertsPage({
     return () => {
       cancelled = true;
     };
-  }, [readingApi, unitKey, version]);
+    // `reconnects`: leituras enviadas com a conexao caida nao chegam ao vivo; rebusca o historico.
+  }, [readingApi, unitKey, version, reconnects]);
 
   // Nomes dos tipos de residuo (so o Gestor tem acesso a esse endpoint).
   useEffect(() => {
@@ -217,8 +221,10 @@ export function AlertsPage({
             void refresh();
             setVersion((v) => v + 1);
           }}
+          disabled={refreshing}
+          aria-busy={refreshing}
         >
-          Atualizar
+          {refreshing ? 'Atualizando…' : 'Atualizar'}
         </button>
         {canSetLimits && (
           <button type="button" className="btn btn--primary" onClick={() => setLimitsOpen(true)}>

@@ -47,9 +47,9 @@ export const FULL_REPORT: Report = {
       detail: '1 destinação(ões), 0 sem comprovante ou licença',
     },
     {
-      label: 'Unidades com leitura recente',
+      label: 'Unidades com leitura recente no momento da geração',
       ok: false,
-      detail: '2 unidade(s), 1 sem leitura nos últimos 15 minutos',
+      detail: '2 unidade(s), 1 sem leitura nos 15 minutos anteriores à geração',
     },
   ],
 };

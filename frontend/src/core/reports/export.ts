@@ -1,5 +1,5 @@
 import { formatDateTime, formatDateUtc } from '../format';
-import type { Report } from './report';
+import { CONSUMPTION_COLUMN_LABEL, REPORT_DISCLAIMER, type Report } from './report';
 
 /**
  * Exportacao do relatorio para CSV (core/, agnostico de UI). O PDF sai pela
@@ -38,6 +38,7 @@ export function reportToCsv(report: Report): string {
       ),
     ]),
     csvText(`Período: últimos ${report.meta.days} dias`),
+    csvText(`Atenção: ${REPORT_DISCLAIMER}`),
   ];
 
   if (report.water.length > 0) {
@@ -47,7 +48,7 @@ export function reportToCsv(report: Report): string {
       row(
         [
           'Unidade',
-          'Consumo (L)',
+          CONSUMPTION_COLUMN_LABEL,
           'Leituras',
           'Leituras de sensor',
           'Leituras manuais',

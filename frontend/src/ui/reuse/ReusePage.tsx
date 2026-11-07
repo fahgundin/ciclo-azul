@@ -5,6 +5,7 @@ import type { WaterStatusApi } from '../../core/api/water-status-api';
 import { PERMISSIONS, can } from '../../core/auth/permissions';
 import { formatNumber } from '../../core/format';
 import {
+  MAX_LAST_READING_AGE_HOURS,
   MIN_HISTORY_HOURS,
   analyzeReuse,
   sumSavings,
@@ -98,6 +99,7 @@ export function ReusePage({
   const [histories, setHistories] = useState<UnitHistory[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, setVersion] = useState(0);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,6 +108,7 @@ export function ReusePage({
         const statuses = await statusApi.list();
         const all = await Promise.all(statuses.map((s) => readingApi.listByUnit(s.unitId)));
         if (!cancelled) {
+          setError(null);
           setHistories(
             statuses.map((s, i) => ({
               unitId: s.unitId,
@@ -124,7 +127,7 @@ export function ReusePage({
     return () => {
       cancelled = true;
     };
-  }, [statusApi, readingApi]);
+  }, [statusApi, readingApi, attempt]);
 
   const analysis = useMemo(
     () => (histories ? analyzeReuse(histories, now()) : null),
@@ -154,9 +157,24 @@ export function ReusePage({
       </p>
 
       {error && (
-        <p className="form-alert" role="alert">
-          {error}
-        </p>
+        <>
+          <p className="form-alert" role="alert">
+            {error}
+          </p>
+          <div className="actions">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                setError(null);
+                setHistories(null);
+                setAttempt((n) => n + 1);
+              }}
+            >
+              Tentar de novo
+            </button>
+          </div>
+        </>
       )}
 
       {!analysis ? (
@@ -165,16 +183,21 @@ export function ReusePage({
         <p className="list-empty">Nenhuma unidade com sensor ou leitura registrada ainda.</p>
       ) : (
         <>
-          <div className="glass opportunity" aria-label="Resumo">
-            <span className="item__meta">Potencial de economia</span>
+          <section className="glass opportunity" aria-label="Resumo">
+            <span className="item__meta">Potencial de economia (estimado — demonstração)</span>
             <div className="opportunity__saving">
-              {formatNumber(sumSavings(open))} <small>L/mês</small>
+              ~{formatNumber(sumSavings(open))} <small>L/mês</small>
             </div>
             <span className="item__meta">
               {open.length} oportunidade(s) em aberto
-              {applied.length > 0 && ` · ${formatNumber(sumSavings(applied))} L/mês já aplicados`}
+              {applied.length > 0 &&
+                ` · ${formatNumber(sumSavings(applied))} L/mês marcados como aplicados (estimativa)`}
             </span>
-          </div>
+            <span className="item__meta">
+              As oportunidades partem do mesmo consumo-base e não são independentes: a soma pode
+              superestimar a economia. Nada aqui é economia medida.
+            </span>
+          </section>
 
           {open.length > 0 && (
             <section className="page__section" aria-labelledby="open-title">
@@ -203,6 +226,23 @@ export function ReusePage({
                   onApply={() => undefined}
                 />
               ))}
+            </section>
+          )}
+
+          {analysis.stale.length > 0 && (
+            <section className="page__section" aria-labelledby="stale-title">
+              <h2 id="stale-title">Sem leituras recentes</h2>
+              <ul className="glass list" aria-label="Unidades sem leituras recentes">
+                {analysis.stale.map((unitId) => (
+                  <li key={unitId}>
+                    <div className="item__title">{unitId}</div>
+                    <div className="item__meta">
+                      A última leitura tem mais de {MAX_LAST_READING_AGE_HOURS} horas: não há
+                      recomendações enquanto o sensor não voltar a enviar dados.
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
 

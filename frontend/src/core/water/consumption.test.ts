@@ -5,6 +5,7 @@ import {
   dailyConsumption,
   deriveState,
   mergeChartPoints,
+  mergeStatuses,
   refreshStates,
   toChartPoints,
 } from './consumption';
@@ -126,6 +127,35 @@ describe('applyReadingEvent', () => {
     const list = [status('dc-sp1', minutesAgo(10), 1)];
     applyReadingEvent(list, event('dc-sp1', minutesAgo(0), 2), NOW);
     expect(list[0]?.currentValueInLiters).toBe(1);
+  });
+});
+
+describe('mergeStatuses (snapshot do REST x leitura ao vivo)', () => {
+  it('o snapshot mais antigo NAO sobrescreve a leitura que chegou pelo WebSocket durante a requisicao', () => {
+    const current = [status('dc-sp1', minutesAgo(0), 99)]; // chegou ao vivo
+    const snapshot = [status('dc-sp1', minutesAgo(2), 10)]; // GET respondeu com o estado antigo
+    expect(mergeStatuses(current, snapshot)).toEqual(current);
+  });
+
+  it('o snapshot mais novo (ou igual) vence', () => {
+    const current = [status('dc-sp1', minutesAgo(2), 10)];
+    const newer = [status('dc-sp1', minutesAgo(0), 99)];
+    expect(mergeStatuses(current, newer)).toEqual(newer);
+    expect(mergeStatuses(newer, newer)).toEqual(newer);
+  });
+
+  it('unidade sem leitura no snapshot nao apaga a leitura ao vivo; unidades novas entram', () => {
+    const current = [status('dc-sp1', minutesAgo(0), 99)];
+    const snapshot = [status('dc-sp1', null), status('dc-sp2', minutesAgo(1), 5)];
+    const merged = mergeStatuses(current, snapshot);
+    expect(merged.map((s) => s.unitId)).toEqual(['dc-sp1', 'dc-sp2']);
+    expect(merged[0]!.currentValueInLiters).toBe(99);
+  });
+
+  it('mantem a unidade que so a tela conhece e ordena por unidade', () => {
+    const current = [status('dc-zz', minutesAgo(0), 1)];
+    const snapshot = [status('dc-aa', minutesAgo(1), 2)];
+    expect(mergeStatuses(current, snapshot).map((s) => s.unitId)).toEqual(['dc-aa', 'dc-zz']);
   });
 });
 

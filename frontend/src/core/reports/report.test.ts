@@ -170,14 +170,19 @@ describe('buildReport — itens verificados (relatorio completo)', () => {
         },
       }),
     );
-    const recent = checks.find((c) => c.label === 'Unidades com leitura recente')!;
+    const recent = checks.find(
+      (c) => c.label === 'Unidades com leitura recente no momento da geração',
+    )!;
     expect(recent.ok).toBe(false);
-    expect(recent.detail).toContain('1 sem leitura nos últimos 15 minutos');
+    expect(recent.detail).toContain('1 sem leitura nos 15 minutos anteriores à geração');
+    expect(recent.detail).toContain('não se refere ao período escolhido');
   });
 
   it('considera sem leitura recente a unidade que nunca teve leitura', () => {
     const { checks } = buildReport(input({ readingsByUnit: { 'dc-sp1': [], 'dc-cps': [] } }));
-    expect(checks.find((c) => c.label === 'Unidades com leitura recente')?.ok).toBe(false);
+    expect(
+      checks.find((c) => c.label === 'Unidades com leitura recente no momento da geração')?.ok,
+    ).toBe(false);
     expect(
       checks.find((c) => c.label === 'Consumo registrado em todas as unidades no período')?.ok,
     ).toBe(false);

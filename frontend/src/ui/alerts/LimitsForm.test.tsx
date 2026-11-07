@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NO_LIMITS, type ConsumptionLimits } from '../../core/limits/limits';
 import { LimitsForm } from './LimitsForm';
@@ -55,5 +55,32 @@ describe('LimitsForm (R03 / HU04)', () => {
     await user.clear(screen.getByLabelText('dc-sp1, litros/dia'));
     await user.click(screen.getByRole('button', { name: 'Salvar limites' }));
     expect(onSave).toHaveBeenCalledWith({ general: null, units: {} });
+  });
+
+  // Revisao do #57: texto recusado pelo navegador (ex.: "1e") chega como '' e virava "sem limite".
+  it('texto invalido digitado no campo numerico nao vira "sem limite": mostra erro e nao salva', () => {
+    const { onSave, onClose } = setup({ general: null, units: { 'dc-sp1': 10000 } });
+    const input = screen.getByLabelText('dc-sp1, litros/dia');
+    // jsdom nao calcula badInput; o navegador real marca isso quando o texto e recusado.
+    Object.defineProperty(input, 'validity', { value: { badInput: true }, configurable: true });
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar limites' }));
+
+    expect(screen.getByText('Informe um valor numérico maior que zero')).toBeInTheDocument();
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(onSave).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('depois de corrigir o texto invalido, o campo volta a ser aceito', () => {
+    const { onSave } = setup({ general: null, units: { 'dc-sp1': 10000 } });
+    const input = screen.getByLabelText('dc-sp1, litros/dia');
+    Object.defineProperty(input, 'validity', { value: { badInput: true }, configurable: true });
+    fireEvent.change(input, { target: { value: '' } });
+    Object.defineProperty(input, 'validity', { value: { badInput: false }, configurable: true });
+    fireEvent.change(input, { target: { value: '500' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar limites' }));
+
+    expect(onSave).toHaveBeenCalledWith({ general: null, units: { 'dc-sp1': 500 } });
   });
 });

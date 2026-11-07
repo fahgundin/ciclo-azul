@@ -183,9 +183,18 @@ exibe essa observação, e a evidência de cada cartão diz isso.
 Como funciona:
 
 - **Histórico suficiente (HU05, cenário 1):** unidade com ao menos 2 leituras nos últimos
-  30 dias e 24 horas ou mais de histórico recebe recomendações com a estimativa de economia
-  em litros por mês. O consumo mensal é a soma das leituras escalada para 30 dias
-  (pressupõe leituras incrementais, a confirmar no contrato).
+  30 dias, **24 horas ou mais entre a primeira e a última leitura** e **última leitura de
+  no máximo 24 horas atrás** recebe recomendações com a estimativa de economia em litros
+  por mês. O consumo mensal é a soma das leituras escalada para 30 dias (pressupõe
+  leituras incrementais, a confirmar no contrato). Com menos de 7 dias de leituras o
+  cartão avisa "Baixa confiança": a extrapolação para 30 dias é frágil.
+- **Sem leituras recentes:** a unidade que tem histórico, mas cuja última leitura tem mais
+  de 24 horas (sensor parado), aparece em "Sem leituras recentes" e não recebe
+  recomendação com base em dado antigo. Os dois limites de 24 horas são valores de
+  demonstração.
+- **Resumo:** rotulado "estimado — demonstração"; "marcados como aplicados (estimativa)"
+  vale só o que alguém marcou neste navegador, sem medição. As três oportunidades partem
+  do mesmo consumo-base e não são independentes: a soma pode superestimar a economia.
 - **Sem histórico suficiente (HU05, cenário 2):** a unidade aparece em "Sem histórico
   suficiente" com a mensagem "Não há histórico suficiente para gerar recomendações". As 24
   horas são um valor de demonstração; o critério oficial ainda não foi definido.
@@ -193,6 +202,9 @@ Como funciona:
   histórico) e aumentar os ciclos de concentração (só a unidade de maior consumo).
 - **Aplicar:** só o Gestor (`insights.apply`); a oportunidade vai para "Já aplicadas" e
   o potencial de economia é abatido.
+
+- **Tentar de novo:** se a carga falhar, a tela oferece "Tentar de novo" (antes só
+  recarregando a página).
 
 Diferenças em relação ao protótipo:
 
@@ -203,6 +215,10 @@ Diferenças em relação ao protótipo:
 - **Sem registro de auditoria** ao aplicar (RNF02 sem backend).
 
 ### Limites e alertas (R03/R08) — adapters em memória
+
+Os adapters em memória (limites, lotes pendentes e oportunidades aplicadas) valem **por
+sessão de login** (`ui/useSessionStores.ts`, chaveado pelo usuário logado): somem ao sair,
+ao trocar de usuário e ao recarregar, mas não quando o token é renovado.
 
 **Anotação: esta tela NÃO tem backend.** Os requisitos R03 (#12) e R08 (#15) estão
 abertos. O que é real e o que é simulado:
@@ -224,15 +240,22 @@ Como funciona:
 - **Limites (HU04):** o Gestor define limites em litros/dia, geral e por unidade; campo
   vazio é "sem limite". A tela mostra, por limite, o consumo do dia, a porcentagem e uma
   barra (com ícone e texto, nunca só cor).
+- **Entrada inválida:** o campo é `type="number"`; texto que o navegador recusa (ex.: `1e`)
+  não vira "sem limite": mostra o erro de valor inválido e não salva.
 - **Alerta de limite:** crítico quando o consumo do dia **passa** do limite (estritamente
   maior); aviso a partir de 80%. O limite geral soma todas as unidades.
 - **Consumo do dia:** soma das leituras do dia **(UTC)**, em litros. Pressupõe leituras
   incrementais; o significado do `value` ainda precisa ser confirmado (mesma pendência
-  dos relatórios). Leituras recebidas pelo WebSocket entram na hora.
+  dos relatórios). Leituras recebidas pelo WebSocket entram na hora, **todas as da sessão**
+  (a tela de alertas não usa o teto de 60 leituras do gráfico, senão as mais antigas
+  sairiam da soma). Se a conexão cair e voltar, o histórico é buscado de novo para
+  recuperar o que chegou com a conexão fora.
 - **Lotes pendentes (HU08):** em `/residuos`, seção "Aguardando destinação" com "Novo
   lote" (tipo, quantidade, prazo). "Registrar destinação" abre o formulário já preenchido,
   grava pela **API real** e só então remove o lote pendente (se o backend recusar, ele
   continua pendente).
+- **Etiqueta de prazo:** "No prazo"/"Prazo vencido" é recalculada a cada minuto; um lote
+  que vence com a tela aberta muda sozinho.
 - **Alerta de lote (HU08):** crítico só quando o prazo **já expirou** e não há destinação.
   Lote dentro do prazo **não** gera alerta (cenário 2 da HU08).
 - **Unidade sem dados recentes:** alerta de atenção para a unidade que tinha leitura e
@@ -272,9 +295,17 @@ Como funciona:
 - **Unidades:** as que `GET /water-status` devolve (com sensor ou com alguma leitura).
   O cliente assina cada uma no WebSocket ao carregar; uma unidade nova só entra na tela
   ao tocar em "Atualizar".
+- **Reconexão:** o socket.io reconecta sozinho, mas o servidor esquece as salas
+  (*rooms*) da conexão perdida. O `RealtimeClient` avisa (`onReconnect`) a cada
+  reconexão; a tela assina de novo todas as unidades e recarrega o estado
+  (`GET /water-status`). Ainda não há indicador visual do estado da conexão.
 - **Gráfico:** últimas leituras (até 60) da unidade escolhida: histórico de
   `GET /water-readings` mais as leituras recebidas ao vivo, com o eixo X proporcional ao
-  tempo.
+  tempo. O rótulo do meio do eixo fica no instante médio (não no ponto do meio por
+  índice).
+- **Atualizar:** o botão mostra "Atualizando…" e fica desabilitado durante a busca. Se uma
+  leitura chegar pelo WebSocket enquanto o `GET /water-status` está em voo, o snapshot,
+  mais antigo, não a sobrescreve (vale o `lastReadingAt` mais recente de cada unidade).
 
 Diferenças em relação ao protótipo e limites conhecidos:
 
@@ -315,17 +346,23 @@ Como funciona:
 - **Histórico de exportações:** só da sessão atual, **em memória** (a trilha de
   auditoria, RNF02, não existe).
 - A tela exibe uma observação visível dizendo que o relatório é gerado no navegador.
+  A **mesma ressalva vai dentro dos arquivos exportados** (rodapé do PDF e linha de
+  "Atenção" no cabeçalho do CSV), porque são eles que circulam como documento.
+- Durante "Gerando…" os campos de tipo e período ficam desabilitados, para o relatório
+  gravado sempre corresponder ao filtro selecionado.
 
 Diferenças em relação ao protótipo e limites conhecidos:
 
 - **Itens verificados:** só fatos que os dados permitem confirmar: comprovante e licença
-  informados em toda destinação; unidades com leitura nos últimos 15 minutos; consumo
-  registrado em todas as unidades no período. Não há "licença válida na data", "dupla
+  informados em toda destinação; unidades com leitura nos 15 minutos anteriores **à geração
+  do relatório** (não ao período escolhido); consumo registrado em todas as unidades no
+  período. Não há "licença válida na data", "dupla
   confirmação" nem "dentro do prazo de destinação" (sem base no backend).
 - **Sem reuso nem limite diário** no consumo (R02 e R03 sem backend).
 - **Unidades:** só entram as unidades com sensor vinculado (não há cadastro de
   unidades). Unidades que só têm leitura manual ficam de fora.
-- **Consumo do período:** é a **soma** dos valores das leituras do período, em litros.
+- **Consumo do período:** a coluna se chama "Soma das leituras (L)" e é a **soma** dos
+  valores das leituras do período, em litros.
   Isso supõe leituras incrementais; o significado exato do `value` da leitura (volume
   por intervalo ou acumulado) precisa ser confirmado em `contrato-iot.md`. Pendência.
 - **Volume de dados:** o histórico de cada unidade é baixado inteiro. Para muitas
