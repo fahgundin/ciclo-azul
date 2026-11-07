@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { formatDateTime, formatDateUtc, formatLiters, formatNumber, initials } from './format';
+import {
+  formatDateTime,
+  formatDateUtc,
+  formatLiters,
+  formatNumber,
+  formatTime,
+  initials,
+} from './format';
 
 describe('initials', () => {
   it('usa a primeira letra de ate dois nomes, em maiuscula', () => {
@@ -53,5 +60,11 @@ describe('formatNumber', () => {
     expect(formatNumber(1234)).toBe('1.234');
     expect(formatNumber(90.5)).toBe('90,5');
     expect(formatNumber(10.12345)).toBe('10,12');
+  });
+});
+
+describe('formatTime', () => {
+  it('mostra hora e minuto', () => {
+    expect(formatTime(new Date(2026, 10, 7, 14, 5).getTime())).toBe('14:05');
   });
 });
