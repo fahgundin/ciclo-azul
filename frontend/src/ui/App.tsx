@@ -4,6 +4,7 @@ import { WasteLotApi } from '../core/api/waste-lot-api';
 import { WasteTypeApi } from '../core/api/waste-type-api';
 import { WaterReadingApi } from '../core/api/water-reading-api';
 import { userFromToken } from '../core/auth/token';
+import { ApiReportDataSource } from '../core/reports/report-data-source';
 import { FlashProvider, useFlash } from './components/Flash';
 import { LoginPage } from './LoginPage';
 import { buildPages } from './pages';
@@ -35,9 +36,13 @@ function AppContent(): JSX.Element {
   const lotApi = useMemo(() => new WasteLotApi(apiUrl, () => auth.token), [auth.token]);
   const sensorApi = useMemo(() => new SensorApi(apiUrl, () => auth.token), [auth.token]);
   const readingApi = useMemo(() => new WaterReadingApi(apiUrl, () => auth.token), [auth.token]);
+  const reportSource = useMemo(
+    () => new ApiReportDataSource({ sensorApi, readingApi, lotApi, wasteApi: api }),
+    [sensorApi, readingApi, lotApi, api],
+  );
   const pages = useMemo(
-    () => buildPages({ wasteApi: api, lotApi, sensorApi, readingApi }),
-    [api, lotApi, sensorApi, readingApi],
+    () => buildPages({ wasteApi: api, lotApi, reportSource, sensorApi, readingApi }),
+    [api, lotApi, reportSource, sensorApi, readingApi],
   );
   const user = useMemo(() => userFromToken(auth.token), [auth.token]);
 
