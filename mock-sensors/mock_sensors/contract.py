@@ -30,14 +30,17 @@ class WaterConsumptionReading:
     schema_version: str = "1.0"
     metric: str = "water-consumption"
     unit: str = "liter"
+    # Momento da medicao. Ausente = agora (leitura ao vivo); preenchido no backfill.
+    timestamp: datetime | None = None
 
     def to_payload(self) -> dict:
         """Serializa para o payload JSON do contrato."""
+        moment = self.timestamp or datetime.now(UTC)
         return {
             "schemaVersion": self.schema_version,
             "sensorId": self.sensor_id,
             "unitId": self.unit_id,
-            "timestamp": datetime.now(UTC).isoformat(),
+            "timestamp": moment.astimezone(UTC).isoformat(),
             "metric": self.metric,
             "value": self.value,
             "unit": self.unit,
