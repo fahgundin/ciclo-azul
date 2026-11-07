@@ -3,10 +3,12 @@ import type { WasteLotApi } from '../core/api/waste-lot-api';
 import type { WasteTypeApi } from '../core/api/waste-type-api';
 import type { WaterReadingApi } from '../core/api/water-reading-api';
 import type { WaterStatusApi } from '../core/api/water-status-api';
+import type { AppliedStore } from '../core/reuse/opportunities';
 import type { LimitStore } from '../core/limits/limits';
 import type { PendingLotStore } from '../core/waste/pending-lot';
 import type { ReportDataSource } from '../core/reports/report-data-source';
 import { AlertsPage } from './alerts/AlertsPage';
+import { ReusePage } from './reuse/ReusePage';
 import { ReportsPage } from './reports/ReportsPage';
 import { SensorsPage } from './sensors/SensorsPage';
 import { WaterPage } from './water/WaterPage';
@@ -19,6 +21,7 @@ interface PageDependencies {
   lotApi: WasteLotApi;
   reportSource: ReportDataSource;
   limitStore: LimitStore;
+  appliedStore: AppliedStore;
   pendingLotStore: PendingLotStore;
   waterStatusApi: WaterStatusApi;
   createRealtime: () => RealtimeLike;
@@ -38,6 +41,7 @@ export function buildPages({
   lotApi,
   reportSource,
   limitStore,
+  appliedStore,
   pendingLotStore,
   waterStatusApi,
   createRealtime,
@@ -65,6 +69,9 @@ export function buildPages({
         limitStore={limitStore}
         pendingLotStore={pendingLotStore}
       />
+    ),
+    '/insights': (
+      <ReusePage statusApi={waterStatusApi} readingApi={readingApi} appliedStore={appliedStore} />
     ),
     '/relatorios': <ReportsPage source={reportSource} />,
     '/sensores': <SensorsPage sensorApi={sensorApi} readingApi={readingApi} />,

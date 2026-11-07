@@ -7,6 +7,7 @@ import { WaterStatusApi } from '../core/api/water-status-api';
 import { userFromToken } from '../core/auth/token';
 import { RealtimeClient } from '../core/realtime/realtime-client';
 import { defaultSocketFactory } from '../core/realtime/socket-factory';
+import { InMemoryAppliedStore } from '../core/reuse/opportunities';
 import { InMemoryLimitStore } from '../core/limits/limits';
 import { InMemoryPendingLotStore } from '../core/waste/pending-lot';
 import { ApiReportDataSource } from '../core/reports/report-data-source';
@@ -49,6 +50,8 @@ function AppContent(): JSX.Element {
   const limitStore = useMemo(() => new InMemoryLimitStore(), [auth.token]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const pendingLotStore = useMemo(() => new InMemoryPendingLotStore(), [auth.token]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const appliedStore = useMemo(() => new InMemoryAppliedStore(), [auth.token]);
   const reportSource = useMemo(
     () => new ApiReportDataSource({ sensorApi, readingApi, lotApi, wasteApi: api }),
     [sensorApi, readingApi, lotApi, api],
@@ -60,6 +63,7 @@ function AppContent(): JSX.Element {
         lotApi,
         reportSource,
         limitStore,
+        appliedStore,
         pendingLotStore,
         waterStatusApi,
         createRealtime,
@@ -72,6 +76,7 @@ function AppContent(): JSX.Element {
       lotApi,
       reportSource,
       limitStore,
+      appliedStore,
       pendingLotStore,
       waterStatusApi,
       createRealtime,

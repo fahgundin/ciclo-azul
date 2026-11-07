@@ -40,7 +40,7 @@
 | Lotes e destinação (R06) | `/residuos` | #41 | Entregue, sobre a API real (com as lacunas abaixo) |
 | Relatórios (R09) | `/relatorios` | #42 | Entregue, **gerado no navegador** (sem endpoint no backend) |
 | Limites e alertas (R03/R08) | `/alertas` | #43 | Entregue com **adapters em memória** (sem backend) |
-| Reuso (R02) | `/insights` | #44 | A fazer |
+| Reuso (R02) | `/insights` | #44 | Entregue com **adapter em memória** e estimativas de demonstração |
 | Painel de KPIs (R10) | `/painel` | #45 | A fazer |
 | Usuários (R01) | `/usuarios` | #46 | A fazer |
 | Auditoria (RNF02) | `/auditoria` | #47 | A fazer |
@@ -164,6 +164,43 @@ Efeitos na tela de resíduos (#41), que difere do protótipo nestes pontos:
 - **Perfis:** o backend deixa a Diretoria *consultar* os lotes (`GET /waste-lots`), mas
   a rota `/residuos` segue restrita ao Gestor Ambiental (ver "Leitura de tipos de
   resíduo pela Diretoria", abaixo).
+
+### Oportunidades de reuso (R02) — adapter em memória e estimativas de demonstração
+
+**Anotação: esta tela NÃO tem backend e as estimativas NÃO são análise.** O R02 (#13) está
+aberto. O que é real e o que é de demonstração:
+
+| O quê | De onde vem |
+|---|---|
+| Unidades, leituras, consumo-base e **quais unidades têm histórico suficiente** | **API real** (`/water-status`, `/water-readings`) |
+| **Catálogo de oportunidades** e **percentuais de economia** (6%, 8%, 5%) | **Fixos de demonstração**, vindos do protótipo (`core/reuse/opportunities.ts`) |
+| **Oportunidades aplicadas** | **Adapter em memória** (`InMemoryAppliedStore`; some ao recarregar) |
+
+A economia estimada é `percentual do catálogo × consumo mensal medido` da unidade. O
+percentual não sai de nenhuma análise do histórico: é um valor de referência fixo. A tela
+exibe essa observação, e a evidência de cada cartão diz isso.
+
+Como funciona:
+
+- **Histórico suficiente (HU05, cenário 1):** unidade com ao menos 2 leituras nos últimos
+  30 dias e 24 horas ou mais de histórico recebe recomendações com a estimativa de economia
+  em litros por mês. O consumo mensal é a soma das leituras escalada para 30 dias
+  (pressupõe leituras incrementais, a confirmar no contrato).
+- **Sem histórico suficiente (HU05, cenário 2):** a unidade aparece em "Sem histórico
+  suficiente" com a mensagem "Não há histórico suficiente para gerar recomendações". As 24
+  horas são um valor de demonstração; o critério oficial ainda não foi definido.
+- **Catálogo:** reaproveitar a água de purga e captar água de chuva (toda unidade com
+  histórico) e aumentar os ciclos de concentração (só a unidade de maior consumo).
+- **Aplicar:** só o Gestor (`insights.apply`); a oportunidade vai para "Já aplicadas" e
+  o potencial de economia é abatido.
+
+Diferenças em relação ao protótipo:
+
+- **Sem "Investigar vazão noturna"**: dependia de dados de vazão que a API não tem e de uma
+  evidência inventada ("vazão noturna 14% acima da base"). Não foi portado.
+- **Evidências** agora citam o consumo medido de fato, em vez de frases fixas do protótipo.
+- **Unidade** em litros por mês (o protótipo usava m³).
+- **Sem registro de auditoria** ao aplicar (RNF02 sem backend).
 
 ### Limites e alertas (R03/R08) — adapters em memória
 
