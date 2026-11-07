@@ -44,6 +44,21 @@ docker compose down
 docker compose down -v
 ```
 
+## Atalho para Windows (PowerShell)
+
+```powershell
+.\scripts\dev-up.ps1              # sobe tudo: Docker, backend, mock (com 24 h de historico) e frontend
+.\scripts\dev-up.ps1 -NoMock      # sem o mock de sensores
+.\scripts\dev-up.ps1 -InMemory    # backend sem Postgres (dados em memoria)
+.\scripts\dev-up.ps1 -Rs05        # inclui a unidade data-center-rs-05 sem historico (HU05)
+.\scripts\dev-up.ps1 -Lan         # acessivel por outro dispositivo da rede local (acesse pelo IP do PC)
+.\scripts\dev-down.ps1            # derruba tudo, mantendo os dados
+.\scripts\dev-down.ps1 -Reset     # derruba e apaga os volumes
+```
+
+Se o PowerShell bloquear a execucao, rode uma vez:
+`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
+
 ## Acessos (valores padrao do .env.example)
 
 - **Keycloak:** http://localhost:8080 — admin `admin` / `admin`.
