@@ -10,6 +10,8 @@ import { Icon } from '../components/Icon';
 interface DisposalFormProps {
   api: WasteLotApi;
   wasteTypes: readonly WasteTypeView[];
+  /** Valores iniciais (ex.: ao destinar um lote pendente). */
+  initial?: { wasteTypeId?: string; quantity?: number };
   /** Relogio injetavel (testes). */
   now?: () => Date;
   onRegistered: (lot: WasteLotView) => void;
@@ -25,17 +27,20 @@ interface DisposalFormProps {
 export function DisposalForm({
   api,
   wasteTypes,
+  initial,
   now = () => new Date(),
   onRegistered,
   onClose,
 }: DisposalFormProps): JSX.Element {
   const idPrefix = useId();
-  const [wasteTypeId, setWasteTypeId] = useState('');
+  const [wasteTypeId, setWasteTypeId] = useState(initial?.wasteTypeId ?? '');
   const [location, setLocation] = useState('');
   const [receiverCompany, setReceiverCompany] = useState('');
   const [license, setLicense] = useState('');
   const [date, setDate] = useState(() => toDateInputValue(now()));
-  const [quantity, setQuantity] = useState('');
+  const [quantity, setQuantity] = useState(
+    initial?.quantity === undefined ? '' : String(initial.quantity),
+  );
   const [proofReference, setProofReference] = useState('');
   const [errors, setErrors] = useState<FieldErrors<DisposalField>>({});
   const [serverError, setServerError] = useState<string | null>(null);

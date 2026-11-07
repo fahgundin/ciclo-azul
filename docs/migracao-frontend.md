@@ -39,7 +39,7 @@
 | Água em tempo real (R05) | `/agua` | #40 | Entregue, sobre a API real (com as diferenças abaixo) |
 | Lotes e destinação (R06) | `/residuos` | #41 | Entregue, sobre a API real (com as lacunas abaixo) |
 | Relatórios (R09) | `/relatorios` | #42 | Entregue, **gerado no navegador** (sem endpoint no backend) |
-| Limites e alertas (R03/R08) | `/alertas` | #43 | A fazer |
+| Limites e alertas (R03/R08) | `/alertas` | #43 | Entregue com **adapters em memória** (sem backend) |
 | Reuso (R02) | `/insights` | #44 | A fazer |
 | Painel de KPIs (R10) | `/painel` | #45 | A fazer |
 | Usuários (R01) | `/usuarios` | #46 | A fazer |
@@ -164,6 +164,59 @@ Efeitos na tela de resíduos (#41), que difere do protótipo nestes pontos:
 - **Perfis:** o backend deixa a Diretoria *consultar* os lotes (`GET /waste-lots`), mas
   a rota `/residuos` segue restrita ao Gestor Ambiental (ver "Leitura de tipos de
   resíduo pela Diretoria", abaixo).
+
+### Limites e alertas (R03/R08) — adapters em memória
+
+**Anotação: esta tela NÃO tem backend.** Os requisitos R03 (#12) e R08 (#15) estão
+abertos. O que é real e o que é simulado:
+
+| O quê | De onde vem |
+|---|---|
+| Estado das unidades, leituras (consumo do dia) | **API real** (`/water-status`, `/water-readings`, WebSocket) |
+| Tipos de resíduo, destinação de lote | **API real** (`/waste-types`, `POST /waste-lots`) |
+| **Limites diários** | **Adapter em memória** (`InMemoryLimitStore`, `core/limits/limits.ts`) |
+| **Lotes aguardando destinação** e seu **prazo** | **Adapter em memória** (`InMemoryPendingLotStore`, `core/waste/pending-lot.ts`) |
+| **Alertas** | **Calculados no navegador** a cada avaliação (`core/alerts/alerts.ts`) |
+
+Os adapters em memória valem **só até recarregar a página** e só neste navegador (um
+par por login). Quando os endpoints existirem, basta implementar as portas `LimitStore`
+e `PendingLotStore` sobre a API. A tela exibe essa observação.
+
+Como funciona:
+
+- **Limites (HU04):** o Gestor define limites em litros/dia, geral e por unidade; campo
+  vazio é "sem limite". A tela mostra, por limite, o consumo do dia, a porcentagem e uma
+  barra (com ícone e texto, nunca só cor).
+- **Alerta de limite:** crítico quando o consumo do dia **passa** do limite (estritamente
+  maior); aviso a partir de 80%. O limite geral soma todas as unidades.
+- **Consumo do dia:** soma das leituras do dia **(UTC)**, em litros. Pressupõe leituras
+  incrementais; o significado do `value` ainda precisa ser confirmado (mesma pendência
+  dos relatórios). Leituras recebidas pelo WebSocket entram na hora.
+- **Lotes pendentes (HU08):** em `/residuos`, seção "Aguardando destinação" com "Novo
+  lote" (tipo, quantidade, prazo). "Registrar destinação" abre o formulário já preenchido,
+  grava pela **API real** e só então remove o lote pendente (se o backend recusar, ele
+  continua pendente).
+- **Alerta de lote (HU08):** crítico só quando o prazo **já expirou** e não há destinação.
+  Lote dentro do prazo **não** gera alerta (cenário 2 da HU08).
+- **Unidade sem dados recentes:** alerta de atenção para a unidade que tinha leitura e
+  parou há mais de 15 minutos (substitui o "sensor offline" do protótipo, que não tem
+  base na API).
+
+Diferenças em relação ao protótipo e limites conhecidos:
+
+- **Sem aviso "vence em N dias"** para lote no prazo: o protótipo avisava, mas a HU08
+  manda **não** alertar lote dentro do prazo. Seguimos a HU.
+- **Prazo de destinação fictício:** 30 dias por padrão, editável por lote. O prazo oficial
+  ainda não foi definido (ver "Prazo de destinação (R08)", abaixo).
+- **Sem notificação** por push ou e-mail ao Gestor; os alertas só aparecem na tela. A HU
+  fala em "notificar o Gestor responsável pela unidade".
+- **Sem "responsável pela unidade"**: não há cadastro de unidades nem vínculo
+  operador-unidade; o Operador vê os alertas de **todas** as unidades. O protótipo
+  restringia pelo vínculo (RN03).
+- **Sem alerta de licença de empresa** (não há cadastro de empresas e licenças com validade).
+- **Perfis:** nova permissão `alerts.view` (Gestor e Operador), rota `/alertas`. Só o
+  Gestor define limites (`water.limits`) e vê lotes pendentes.
+- **Sem sino com contador** na barra superior; os alertas ficam na aba "Alertas".
 
 ### Água em tempo real (R05)
 

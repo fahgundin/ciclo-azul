@@ -19,6 +19,7 @@ export const PERMISSIONS = {
   REPORTS_GENERATE: 'reports.generate',
   USERS_MANAGE: 'users.manage',
   AUDIT_VIEW: 'audit.view',
+  ALERTS_VIEW: 'alerts.view',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -37,6 +38,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   [PERMISSIONS.REPORTS_GENERATE]: 'Gerar relatórios de conformidade (R09)',
   [PERMISSIONS.USERS_MANAGE]: 'Gerenciar usuários e perfis (R01)',
   [PERMISSIONS.AUDIT_VIEW]: 'Consultar histórico de auditoria',
+  [PERMISSIONS.ALERTS_VIEW]: 'Ver alertas de consumo, sensores e lotes sem destinação (R03/R08)',
 };
 
 const P = PERMISSIONS;
@@ -54,8 +56,9 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
     P.INSIGHTS_VIEW,
     P.INSIGHTS_APPLY,
     P.REPORTS_GENERATE,
+    P.ALERTS_VIEW,
   ],
-  [APP_ROLES.OPERADOR]: [P.WATER_MONITOR, P.SENSORS_MANAGE],
+  [APP_ROLES.OPERADOR]: [P.WATER_MONITOR, P.SENSORS_MANAGE, P.ALERTS_VIEW],
   [APP_ROLES.DIRETORIA]: [P.WASTE_VIEW],
 };
 

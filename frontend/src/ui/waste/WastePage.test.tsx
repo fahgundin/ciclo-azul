@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { WasteLotApi } from '../../core/api/waste-lot-api';
 import type { WasteTypeApi } from '../../core/api/waste-type-api';
+import { InMemoryPendingLotStore } from '../../core/waste/pending-lot';
 import { WastePage } from './WastePage';
 
 function setup() {
@@ -14,7 +15,9 @@ function setup() {
     list: vi.fn().mockResolvedValue([]),
     create: vi.fn(),
   } as unknown as WasteTypeApi;
-  render(<WastePage wasteApi={wasteApi} lotApi={lotApi} />);
+  render(
+    <WastePage wasteApi={wasteApi} lotApi={lotApi} pendingStore={new InMemoryPendingLotStore()} />,
+  );
   return { lotApi, wasteApi, user: userEvent.setup() };
 }
 

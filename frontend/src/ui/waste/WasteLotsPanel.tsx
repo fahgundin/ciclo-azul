@@ -4,15 +4,24 @@ import { ApiError } from '../../core/api/api-error';
 import type { WasteLotApi } from '../../core/api/waste-lot-api';
 import type { WasteTypeApi } from '../../core/api/waste-type-api';
 import { formatDateUtc, formatNumber } from '../../core/format';
+import {
+  isOverdue,
+  lotDueDate,
+  type PendingLot,
+  type PendingLotStore,
+} from '../../core/waste/pending-lot';
 import { Dialog } from '../components/Dialog';
 import { useFlash } from '../components/Flash';
 import { Icon } from '../components/Icon';
 import '../styles/components.css';
 import { DisposalForm } from './DisposalForm';
+import { PendingLotForm } from './PendingLotForm';
 
 interface WasteLotsPanelProps {
   lotApi: WasteLotApi;
   wasteApi: WasteTypeApi;
+  /** ADAPTER EM MEMORIA dos lotes aguardando destinacao (R08). */
+  pendingStore: PendingLotStore;
   /** Relogio injetavel (testes). */
   now?: () => Date;
 }
@@ -24,13 +33,22 @@ interface WasteLotsPanelProps {
  * status "Destinado"): nao ha lotes pendentes, prazo, nem 2a confirmacao. Ver
  * docs/migracao-frontend.md, "Lacunas do R06".
  */
-export function WasteLotsPanel({ lotApi, wasteApi, now }: WasteLotsPanelProps): JSX.Element {
+export function WasteLotsPanel({
+  lotApi,
+  wasteApi,
+  pendingStore,
+  now = () => new Date(),
+}: WasteLotsPanelProps): JSX.Element {
   const flash = useFlash();
   const [lots, setLots] = useState<WasteLotView[]>([]);
   const [types, setTypes] = useState<WasteTypeView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  // Dialogo aberto: destinacao (opcionalmente de um lote pendente) ou novo lote pendente.
+  const [dialog, setDialog] = useState<
+    { kind: 'disposal'; pending?: PendingLot } | { kind: 'new-lot' } | null
+  >(null);
+  const [pending, setPending] = useState<PendingLot[]>(() => pendingStore.list());
 
   const load = useCallback(async () => {
     try {
@@ -61,7 +79,11 @@ export function WasteLotsPanel({ lotApi, wasteApi, now }: WasteLotsPanelProps): 
       <h1>Destinação de lotes</h1>
 
       <div className="actions">
-        <button type="button" className="btn btn--primary" onClick={() => setDialogOpen(true)}>
+        <button
+          type="button"
+          className="btn btn--primary"
+          onClick={() => setDialog({ kind: 'disposal' })}
+        >
           <Icon name="plus" />
           Registrar destinação
         </button>
@@ -72,6 +94,55 @@ export function WasteLotsPanel({ lotApi, wasteApi, now }: WasteLotsPanelProps): 
           {error}
         </p>
       )}
+
+      <section className="page__section" aria-labelledby="pending-lots-title">
+        <h2 id="pending-lots-title">Aguardando destinação</h2>
+        <p className="hint">
+          Lotes gerados e ainda sem destinação ficam só neste navegador (adapter em memória): o
+          backend ainda não tem lotes pendentes nem prazo (R08).
+        </p>
+        <div className="actions">
+          <button type="button" className="btn" onClick={() => setDialog({ kind: 'new-lot' })}>
+            <Icon name="plus" />
+            Novo lote
+          </button>
+        </div>
+        {pending.length === 0 ? (
+          <p className="list-empty">Nenhum lote aguardando destinação.</p>
+        ) : (
+          <ul className="glass list" aria-label="Lotes aguardando destinação">
+            {pending.map((lot) => {
+              const overdue = isOverdue(lot, now());
+              return (
+                <li key={lot.id}>
+                  <div className="item__title">
+                    {lot.id} · {typeName(lot.wasteTypeId)}
+                  </div>
+                  <div className="item__meta">
+                    Quantidade {formatNumber(lot.quantity)} · prazo até{' '}
+                    {formatDateUtc(lotDueDate(lot).toISOString())}
+                  </div>
+                  <span className={overdue ? 'tag tag--warn' : 'tag'}>
+                    <Icon name={overdue ? 'alert' : 'info'} size={14} />
+                    {overdue ? 'Prazo vencido' : 'No prazo'}
+                  </span>
+                  <div>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => setDialog({ kind: 'disposal', pending: lot })}
+                    >
+                      Registrar destinação
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <h2>Destinados</h2>
 
       {loading ? (
         <p className="hint">Carregando…</p>
@@ -100,16 +171,41 @@ export function WasteLotsPanel({ lotApi, wasteApi, now }: WasteLotsPanelProps): 
         </ul>
       )}
 
-      <Dialog open={dialogOpen} title="Registrar destinação" onClose={() => setDialogOpen(false)}>
+      <Dialog
+        open={dialog?.kind === 'disposal'}
+        title="Registrar destinação"
+        onClose={() => setDialog(null)}
+      >
         <DisposalForm
           api={lotApi}
           wasteTypes={types}
           now={now}
+          initial={
+            dialog?.kind === 'disposal' && dialog.pending
+              ? { wasteTypeId: dialog.pending.wasteTypeId, quantity: dialog.pending.quantity }
+              : undefined
+          }
           onRegistered={() => {
+            if (dialog?.kind === 'disposal' && dialog.pending) {
+              pendingStore.remove(dialog.pending.id);
+              setPending(pendingStore.list());
+            }
             flash('Destinação registrada. O lote consta como Destinado.');
             void load();
           }}
-          onClose={() => setDialogOpen(false)}
+          onClose={() => setDialog(null)}
+        />
+      </Dialog>
+
+      <Dialog open={dialog?.kind === 'new-lot'} title="Novo lote" onClose={() => setDialog(null)}>
+        <PendingLotForm
+          wasteTypes={types}
+          onAdd={(lot) => {
+            pendingStore.add(lot, now());
+            setPending(pendingStore.list());
+            flash('Lote criado. Ele aguarda a destinação.');
+          }}
+          onClose={() => setDialog(null)}
         />
       </Dialog>
     </section>

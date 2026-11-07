@@ -113,3 +113,15 @@ export function mergeChartPoints(
   }
   return merged.sort((a, b) => a.t - b.t).slice(-limit);
 }
+
+/**
+ * Consumo de um dia: soma dos valores das leituras daquele dia (UTC), em litros.
+ * PRESSUPOSTO a confirmar: leituras incrementais (volume por intervalo). Ver
+ * contrato-iot.md, secao 8. O dia e UTC, como as datas de leitura manual.
+ */
+export function dailyConsumption(points: readonly ChartPoint[], day: Date): number {
+  const start = Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate());
+  const end = start + 24 * 60 * 60 * 1000;
+  const total = points.filter((p) => p.t >= start && p.t < end).reduce((sum, p) => sum + p.v, 0);
+  return Math.round(total * 100) / 100;
+}

@@ -21,6 +21,7 @@ const PATHS: Record<UiIconName, string> = {
   alert: 'M12 3.5 2.5 20h19L12 3.5ZM12 10v4.5M12 17.4v.1',
   check: 'm5 12.5 4.5 4.5L19 7.5',
   plus: 'M12 5v14M5 12h14',
+  bell: 'M6 16v-5a6 6 0 1 1 12 0v5l1.5 2h-15L6 16ZM10 21h4',
 };
 
 /** Icone decorativo (aria-hidden): o texto acessivel fica no elemento que o contem. */

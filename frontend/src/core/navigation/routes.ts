@@ -2,7 +2,16 @@ import { can, PERMISSIONS, type Permission } from '../auth/permissions';
 import type { AppRole } from '../auth/roles';
 
 /** Nomes de icone (a UI mapeia cada nome para o desenho). */
-export type IconName = 'home' | 'drop' | 'flask' | 'sensor' | 'bulb' | 'file' | 'users' | 'list';
+export type IconName =
+  | 'home'
+  | 'drop'
+  | 'flask'
+  | 'sensor'
+  | 'bulb'
+  | 'file'
+  | 'users'
+  | 'list'
+  | 'bell';
 
 /** Rota de navegacao principal do app. */
 export interface AppRoute {
@@ -31,6 +40,7 @@ export const APP_ROUTES: readonly AppRoute[] = [
   { path: '/painel', label: 'Painel', icon: 'home', permission: null },
   { path: '/agua', label: 'Água', icon: 'drop', permission: PERMISSIONS.WATER_MONITOR },
   { path: '/residuos', label: 'Resíduos', icon: 'flask', permission: PERMISSIONS.WASTE_TYPES },
+  { path: '/alertas', label: 'Alertas', icon: 'bell', permission: PERMISSIONS.ALERTS_VIEW },
   { path: '/sensores', label: 'Sensores', icon: 'sensor', permission: PERMISSIONS.SENSORS_MANAGE },
   { path: '/insights', label: 'Reuso', icon: 'bulb', permission: PERMISSIONS.INSIGHTS_VIEW },
   {

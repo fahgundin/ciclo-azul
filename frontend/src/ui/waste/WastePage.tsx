@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { WasteLotApi } from '../../core/api/waste-lot-api';
 import type { WasteTypeApi } from '../../core/api/waste-type-api';
+import type { PendingLotStore } from '../../core/waste/pending-lot';
 import { WasteTypesPage } from '../WasteTypesPage';
 import '../styles/components.css';
 import { WasteLotsPanel } from './WasteLotsPanel';
@@ -15,6 +16,8 @@ const TABS: { id: Tab; label: string }[] = [
 interface WastePageProps {
   wasteApi: WasteTypeApi;
   lotApi: WasteLotApi;
+  /** ADAPTER EM MEMORIA dos lotes aguardando destinacao (R08). */
+  pendingStore: PendingLotStore;
   /** Relogio injetavel (testes). */
   now?: () => Date;
 }
@@ -24,7 +27,7 @@ interface WastePageProps {
  * So a aba ativa fica montada, entao ao voltar para os lotes a lista de tipos
  * (usada no formulario) e recarregada.
  */
-export function WastePage({ wasteApi, lotApi, now }: WastePageProps): JSX.Element {
+export function WastePage({ wasteApi, lotApi, pendingStore, now }: WastePageProps): JSX.Element {
   const [tab, setTab] = useState<Tab>('lots');
 
   return (
@@ -47,7 +50,12 @@ export function WastePage({ wasteApi, lotApi, now }: WastePageProps): JSX.Elemen
       </div>
       <div role="tabpanel" id="waste-tabpanel" aria-labelledby={`waste-tab-${tab}`}>
         {tab === 'lots' ? (
-          <WasteLotsPanel lotApi={lotApi} wasteApi={wasteApi} now={now} />
+          <WasteLotsPanel
+            lotApi={lotApi}
+            wasteApi={wasteApi}
+            pendingStore={pendingStore}
+            now={now}
+          />
         ) : (
           <WasteTypesPage api={wasteApi} />
         )}

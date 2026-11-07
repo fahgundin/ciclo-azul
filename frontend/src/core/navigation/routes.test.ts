@@ -9,18 +9,19 @@ describe('routesFor', () => {
     expect(paths([APP_ROLES.ADMINISTRADOR])).toEqual(['/painel', '/usuarios', '/auditoria']);
   });
 
-  it('Gestor Ambiental: painel, agua, residuos, reuso e relatorios', () => {
+  it('Gestor Ambiental: painel, agua, residuos, alertas, reuso e relatorios', () => {
     expect(paths([APP_ROLES.GESTOR_AMBIENTAL])).toEqual([
       '/painel',
       '/agua',
       '/residuos',
+      '/alertas',
       '/insights',
       '/relatorios',
     ]);
   });
 
-  it('Operador: painel, agua e sensores', () => {
-    expect(paths([APP_ROLES.OPERADOR])).toEqual(['/painel', '/agua', '/sensores']);
+  it('Operador: painel, agua, alertas e sensores', () => {
+    expect(paths([APP_ROLES.OPERADOR])).toEqual(['/painel', '/agua', '/alertas', '/sensores']);
   });
 
   it('Diretoria: so o painel por enquanto (residuos aguarda liberacao no backend)', () => {
@@ -35,6 +36,7 @@ describe('routesFor', () => {
     expect(paths([APP_ROLES.ADMINISTRADOR, APP_ROLES.OPERADOR])).toEqual([
       '/painel',
       '/agua',
+      '/alertas',
       '/sensores',
       '/usuarios',
       '/auditoria',

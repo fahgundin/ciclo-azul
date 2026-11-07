@@ -7,6 +7,8 @@ import { WaterStatusApi } from '../core/api/water-status-api';
 import { userFromToken } from '../core/auth/token';
 import { RealtimeClient } from '../core/realtime/realtime-client';
 import { defaultSocketFactory } from '../core/realtime/socket-factory';
+import { InMemoryLimitStore } from '../core/limits/limits';
+import { InMemoryPendingLotStore } from '../core/waste/pending-lot';
 import { ApiReportDataSource } from '../core/reports/report-data-source';
 import { FlashProvider, useFlash } from './components/Flash';
 import { LoginPage } from './LoginPage';
@@ -42,6 +44,11 @@ function AppContent(): JSX.Element {
   const waterStatusApi = useMemo(() => new WaterStatusApi(apiUrl, () => auth.token), [auth.token]);
   const createRealtime = useCallback(() => new RealtimeClient(apiUrl, defaultSocketFactory), []);
   const getToken = useCallback(() => auth.token, [auth.token]);
+  // ADAPTERS EM MEMORIA (R03/R08): um par por sessao de login; somem ao recarregar.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const limitStore = useMemo(() => new InMemoryLimitStore(), [auth.token]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const pendingLotStore = useMemo(() => new InMemoryPendingLotStore(), [auth.token]);
   const reportSource = useMemo(
     () => new ApiReportDataSource({ sensorApi, readingApi, lotApi, wasteApi: api }),
     [sensorApi, readingApi, lotApi, api],
@@ -52,13 +59,26 @@ function AppContent(): JSX.Element {
         wasteApi: api,
         lotApi,
         reportSource,
+        limitStore,
+        pendingLotStore,
         waterStatusApi,
         createRealtime,
         getToken,
         sensorApi,
         readingApi,
       }),
-    [api, lotApi, reportSource, waterStatusApi, createRealtime, getToken, sensorApi, readingApi],
+    [
+      api,
+      lotApi,
+      reportSource,
+      limitStore,
+      pendingLotStore,
+      waterStatusApi,
+      createRealtime,
+      getToken,
+      sensorApi,
+      readingApi,
+    ],
   );
   const user = useMemo(() => userFromToken(auth.token), [auth.token]);
 
