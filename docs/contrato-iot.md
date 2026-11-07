@@ -116,6 +116,10 @@ Comportamento esperado do mock:
 - Permitir simular cenários: consumo normal, pico, e **silêncio** (parar de
   publicar para exercitar a regra "sem dados recentes").
 - Suportar múltiplas unidades simultâneas.
+- Publicar, ao iniciar, um **histórico** das últimas 48 h (leituras com `timestamp`
+  no passado, uma a cada 15 min), configurável por `MOCK_BACKFILL_HOURS` e
+  `MOCK_BACKFILL_STEP_MINUTES`. O backend aceita timestamp passado (só rejeita futuro,
+  seção 3), então não há mudança de contrato. Ver `mock-sensors/README.md`.
 - Biblioteca sugerida: `paho-mqtt`.
 
 Esboço (ilustrativo):

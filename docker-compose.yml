@@ -92,6 +92,8 @@ services:
     environment:
       MQTT_BROKER: ${MQTT_BROKER:-mqtt}
       MOCK_UNIT_ID: ${MOCK_UNIT_ID:-data-center-sp-01}
+      MOCK_BACKFILL_HOURS: ${MOCK_BACKFILL_HOURS:-48}
+      MOCK_BACKFILL_STEP_MINUTES: ${MOCK_BACKFILL_STEP_MINUTES:-15}
     depends_on:
       mqtt:
         condition: service_healthy
