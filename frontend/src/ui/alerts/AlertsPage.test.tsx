@@ -7,7 +7,7 @@ import { InMemoryLimitStore } from '../../core/limits/limits';
 import { InMemoryPendingLotStore } from '../../core/waste/pending-lot';
 import { FlashProvider } from '../components/Flash';
 import { UserProvider } from '../UserContext';
-import { fakeRealtime } from '../water/fake-realtime';
+import { fakeRealtime } from '../../test-helpers/fake-realtime';
 import { AlertsPage } from './AlertsPage';
 
 const NOW = new Date('2026-11-07T12:00:00.000Z');
@@ -45,12 +45,13 @@ function setup({
     .mockResolvedValue([{ id: 'wt-1', name: 'Óleo', classification: 'Metal pesado' }]),
 } = {}) {
   const rt = fakeRealtime();
+  const listByUnit = vi.fn(async (unit: string) => [...(history[unit] ?? [])]);
   render(
     <FlashProvider>
       <UserProvider user={{ name: 'Marina Costa', email: null, roles }}>
         <AlertsPage
           statusApi={{ list: vi.fn().mockResolvedValue(statuses) }}
-          readingApi={{ listByUnit: vi.fn(async (unit: string) => history[unit] ?? []) }}
+          readingApi={{ listByUnit }}
           wasteApi={{ list: wasteList }}
           createRealtime={() => rt.realtime}
           getToken={() => 'tok'}
@@ -61,7 +62,7 @@ function setup({
       </UserProvider>
     </FlashProvider>,
   );
-  return { rt, limitStore, pendingLotStore, wasteList, user: userEvent.setup() };
+  return { rt, listByUnit, limitStore, pendingLotStore, wasteList, user: userEvent.setup() };
 }
 
 const openAlerts = async () => screen.findByRole('list', { name: 'Alertas em aberto' });
@@ -117,6 +118,49 @@ describe('AlertsPage — limites de consumo (R03 / HU04)', () => {
     expect(alert).toHaveTextContent('Crítico');
     expect(alert).toHaveTextContent('Consumo');
     expect(alert).toHaveTextContent('Consumo de hoje em 10.500 L, acima do limite de 10.000 L.');
+  });
+
+  // Bug da revisao do #57: o hook guarda so 60 leituras ao vivo; as mais antigas saiam da soma do dia.
+  it('o consumo do dia conta TODAS as leituras ao vivo, mesmo passando de 60 na sessao', async () => {
+    const limitStore = new InMemoryLimitStore();
+    limitStore.save({ general: null, units: { 'dc-sp1': 10000 } });
+    const { rt } = setup({ limitStore, history: { 'dc-sp1': [reading('dc-sp1', 60, 9500)] } });
+    await screen.findByText('Nenhum alerta em aberto.');
+
+    const live = (second: number, valueInLiters: number) => ({
+      unitId: 'dc-sp1',
+      sensorId: 'sn',
+      timestamp: new Date(NOW.getTime() - 30 * 60_000 + second * 1000).toISOString(),
+      valueInLiters,
+      readingType: 'sensor' as const,
+    });
+    // A primeira leitura ao vivo (600 L) e a que o teto de 60 descartaria; 64 de 1 L vem depois.
+    await rt.emit(live(0, 600));
+    for (let i = 1; i <= 64; i += 1) {
+      await rt.emit(live(i, 1));
+    }
+
+    // 9.500 + 600 + 64 = 10.164 L > 10.000 L (com o teto de 60 sairia 9.560 L e nao alertaria)
+    const alert = (await screen.findByText('Limite excedido: dc-sp1')).closest('li')!;
+    expect(alert).toHaveTextContent('Consumo de hoje em 10.164 L, acima do limite de 10.000 L.');
+  });
+
+  it('ao reconectar, rebusca o historico para recuperar leituras enviadas com a conexao caida', async () => {
+    const limitStore = new InMemoryLimitStore();
+    limitStore.save({ general: null, units: { 'dc-sp1': 10000 } });
+    const stored: WaterReadingView[] = [reading('dc-sp1', 60, 2000)];
+    const { rt, listByUnit } = setup({
+      limitStore,
+      history: { 'dc-sp1': stored },
+    });
+    await screen.findByText('Nenhum alerta em aberto.');
+    const before = listByUnit.mock.calls.length;
+
+    stored.push(reading('dc-sp1', 5, 9000)); // chegou enquanto a conexao estava fora
+    await rt.reconnect();
+
+    expect(await screen.findByText('Limite excedido: dc-sp1')).toBeInTheDocument();
+    expect(listByUnit.mock.calls.length).toBeGreaterThan(before);
   });
 
   it('uma leitura nova recebida em tempo real pode fazer o limite estourar', async () => {

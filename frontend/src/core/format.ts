@@ -1,4 +1,6 @@
-const litersFormat = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
+const numberFormat = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
+// Valores minusculos (ex.: 0,004) nao podem virar "0": mostra 2 algarismos significativos.
+const tinyFormat = new Intl.NumberFormat('pt-BR', { maximumSignificantDigits: 2 });
 const dateUtcFormat = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
   month: '2-digit',
@@ -13,9 +15,13 @@ const dateTimeFormat = new Intl.DateTimeFormat('pt-BR', {
   minute: '2-digit',
 });
 
-/** Numero no padrao pt-BR, ate duas casas decimais (ex.: 1.234,5). */
+/**
+ * Numero no padrao pt-BR, ate duas casas decimais (ex.: 1.234,5). Valor diferente de
+ * zero e menor que 0,01 mostra 2 algarismos significativos (0,004 nao vira "0").
+ */
 export function formatNumber(value: number): string {
-  return litersFormat.format(value);
+  const tiny = value !== 0 && Math.abs(value) < 0.01;
+  return (tiny ? tinyFormat : numberFormat).format(value);
 }
 
 const timeFormat = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -27,7 +33,7 @@ export function formatTime(timestampMs: number): string {
 
 /** Volume em litros no padrao pt-BR (ex.: 1.234,5 L). */
 export function formatLiters(value: number): string {
-  return `${litersFormat.format(value)} L`;
+  return `${formatNumber(value)} L`;
 }
 
 /**

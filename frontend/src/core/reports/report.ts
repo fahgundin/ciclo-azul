@@ -23,6 +23,19 @@ export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
   waste: 'Destinação de resíduos',
 };
 
+/**
+ * Ressalva que acompanha o relatorio ONDE ELE CIRCULA (rodape do PDF e cabecalho do
+ * CSV): o arquivo exportado e o que vira documento de conformidade, entao o aviso
+ * nao pode ficar so na tela.
+ */
+export const REPORT_DISCLAIMER =
+  'Gerado no navegador a partir dos dados da API (o backend ainda não tem endpoint de relatórios). ' +
+  'Consumo = soma das leituras do período, supondo que cada leitura seja o volume do intervalo ' +
+  '(significado de "value" ainda a confirmar em docs/contrato-iot.md).';
+
+/** Rotulo da coluna de litros: e a SOMA das leituras, nao um consumo medido oficial. */
+export const CONSUMPTION_COLUMN_LABEL = 'Soma das leituras (L)';
+
 /** Periodos oferecidos, em dias. */
 export const REPORT_PERIODS = [7, 30, 90] as const;
 
@@ -180,9 +193,9 @@ function buildChecks(
       return !(nowMs - latest <= staleAfterMs);
     }).length;
     checks.push({
-      label: 'Unidades com leitura recente',
+      label: 'Unidades com leitura recente no momento da geração',
       ok: stale === 0,
-      detail: `${units.length} unidade(s), ${stale} sem leitura nos últimos ${STALE_AFTER_MINUTES} minutos`,
+      detail: `${units.length} unidade(s), ${stale} sem leitura nos ${STALE_AFTER_MINUTES} minutos anteriores à geração (não se refere ao período escolhido)`,
     });
 
     const withoutConsumption = water.filter((row) => row.readings === 0).length;

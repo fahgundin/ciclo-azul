@@ -110,6 +110,7 @@ export function ReportsPage({
             id={typeId}
             className="field__input"
             value={type}
+            disabled={loading}
             onChange={(e) => {
               setType(e.target.value as ReportType);
               setReport(null);
@@ -129,6 +130,7 @@ export function ReportsPage({
             id={daysId}
             className="field__input"
             value={days}
+            disabled={loading}
             onChange={(e) => {
               setDays(Number(e.target.value));
               setReport(null);

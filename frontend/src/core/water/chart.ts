@@ -50,10 +50,12 @@ export function buildChart(points: readonly ChartPoint[]): ChartGeometry | null 
     return { y: y(value), value };
   });
 
-  const middle = points[Math.floor(points.length / 2)] ?? first;
+  // Rotulo do meio no instante MEDIO (como a posicao e proporcional ao tempo), e nao no
+  // ponto do meio por indice: com leituras agrupadas ele colaria num dos extremos.
+  const middleT = (first.t + last.t) / 2;
   const xTicks = [
     { x: x(first.t), t: first.t, anchor: 'start' as const },
-    { x: x(middle.t), t: middle.t, anchor: 'middle' as const },
+    { x: x(middleT), t: middleT, anchor: 'middle' as const },
     { x: x(last.t), t: last.t, anchor: 'end' as const },
   ];
 

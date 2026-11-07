@@ -1,5 +1,6 @@
 import { useId, useState, type FormEvent } from 'react';
 import {
+  LIMIT_INVALID_MESSAGE,
   validateLimits,
   type ConsumptionLimits,
   type LimitFormValues,
@@ -29,12 +30,21 @@ export function LimitsForm({ units, initial, onSave, onClose }: LimitsFormProps)
     units: Object.fromEntries(units.map((unit) => [unit, text(initial.units[unit])])),
   });
   const [errors, setErrors] = useState<FieldErrors<string>>({});
+  // Campos cujo texto o navegador recusou (ex.: "1e", "--"): input type=number devolve ''
+  // nesses casos, o que seria lido como "sem limite" e salvo sem erro.
+  const [badInput, setBadInput] = useState<Record<string, boolean>>({});
 
   function handleSubmit(event: FormEvent): void {
     event.preventDefault();
     const result = validateLimits(values);
-    setErrors(result.errors);
-    if (result.limits) {
+    const nextErrors: FieldErrors<string> = { ...result.errors };
+    for (const key of Object.keys(badInput)) {
+      if (badInput[key]) {
+        nextErrors[key] = LIMIT_INVALID_MESSAGE;
+      }
+    }
+    setErrors(nextErrors);
+    if (result.limits && Object.keys(nextErrors).length === 0) {
       onSave(result.limits);
       onClose();
     }
@@ -51,7 +61,11 @@ export function LimitsForm({ units, initial, onSave, onClose }: LimitsFormProps)
         step="any"
         inputMode="decimal"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          const invalid = e.target.validity.badInput;
+          setBadInput((current) => ({ ...current, [key]: invalid }));
+          onChange(e.target.value);
+        }}
         aria-invalid={errors[key] ? true : undefined}
         aria-describedby={errors[key] ? `${idPrefix}-${key}-error` : undefined}
       />

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { WasteLotView, WasteTypeView } from '@ciclo-azul/contracts';
 import { ApiError } from '../../core/api/api-error';
 import type { WasteLotApi } from '../../core/api/waste-lot-api';
@@ -22,9 +22,13 @@ interface WasteLotsPanelProps {
   wasteApi: WasteTypeApi;
   /** ADAPTER EM MEMORIA dos lotes aguardando destinacao (R08). */
   pendingStore: PendingLotStore;
-  /** Relogio injetavel (testes). */
+  /** Relogio e intervalo de atualizacao da etiqueta de prazo, injetaveis (testes). */
   now?: () => Date;
+  tickMs?: number;
 }
+
+/** A cada quantos ms a etiqueta "No prazo"/"Prazo vencido" e recalculada. */
+export const DEFAULT_DEADLINE_TICK_MS = 60_000;
 
 /**
  * Lotes de residuo com destinacao registrada (R06), sobre a API real.
@@ -38,8 +42,17 @@ export function WasteLotsPanel({
   wasteApi,
   pendingStore,
   now = () => new Date(),
+  tickMs = DEFAULT_DEADLINE_TICK_MS,
 }: WasteLotsPanelProps): JSX.Element {
   const flash = useFlash();
+  // Relogio da tela: sem ele, um lote que vence com a tela aberta continuaria "No prazo".
+  const nowRef = useRef(now);
+  nowRef.current = now;
+  const [clock, setClock] = useState(() => now());
+  useEffect(() => {
+    const id = setInterval(() => setClock(nowRef.current()), tickMs);
+    return () => clearInterval(id);
+  }, [tickMs]);
   const [lots, setLots] = useState<WasteLotView[]>([]);
   const [types, setTypes] = useState<WasteTypeView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,7 +125,7 @@ export function WasteLotsPanel({
         ) : (
           <ul className="glass list" aria-label="Lotes aguardando destinação">
             {pending.map((lot) => {
-              const overdue = isOverdue(lot, now());
+              const overdue = isOverdue(lot, clock);
               return (
                 <li key={lot.id}>
                   <div className="item__title">

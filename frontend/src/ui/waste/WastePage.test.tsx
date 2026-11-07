@@ -59,4 +59,49 @@ describe('WastePage', () => {
     // 1 (lotes) + 1 (aba de tipos) + 1 (lotes de novo)
     expect(wasteApi.list).toHaveBeenCalledTimes(3);
   });
+
+  // Revisao do #54: abas ARIA sem navegacao por setas.
+  describe('teclado (padrao ARIA de abas)', () => {
+    it('so a aba ativa entra na ordem de Tab (tabindex roving)', () => {
+      setup();
+      expect(screen.getByRole('tab', { name: 'Destinação de lotes' })).toHaveAttribute(
+        'tabindex',
+        '0',
+      );
+      expect(screen.getByRole('tab', { name: 'Tipos de resíduo' })).toHaveAttribute(
+        'tabindex',
+        '-1',
+      );
+    });
+
+    it('seta para a direita e para a esquerda trocam de aba e movem o foco (circular)', async () => {
+      const { user } = setup();
+      const lots = screen.getByRole('tab', { name: 'Destinação de lotes' });
+      const types = screen.getByRole('tab', { name: 'Tipos de resíduo' });
+      lots.focus();
+
+      await user.keyboard('{ArrowRight}');
+      expect(types).toHaveAttribute('aria-selected', 'true');
+      expect(types).toHaveFocus();
+
+      await user.keyboard('{ArrowRight}'); // volta ao inicio
+      expect(lots).toHaveAttribute('aria-selected', 'true');
+      expect(lots).toHaveFocus();
+
+      await user.keyboard('{ArrowLeft}'); // do inicio vai ao fim
+      expect(types).toHaveAttribute('aria-selected', 'true');
+      expect(types).toHaveFocus();
+    });
+
+    it('End vai para a ultima aba e Home para a primeira', async () => {
+      const { user } = setup();
+      screen.getByRole('tab', { name: 'Destinação de lotes' }).focus();
+
+      await user.keyboard('{End}');
+      expect(screen.getByRole('tab', { name: 'Tipos de resíduo' })).toHaveFocus();
+
+      await user.keyboard('{Home}');
+      expect(screen.getByRole('tab', { name: 'Destinação de lotes' })).toHaveFocus();
+    });
+  });
 });

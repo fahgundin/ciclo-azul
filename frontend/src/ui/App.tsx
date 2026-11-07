@@ -7,14 +7,14 @@ import { WaterStatusApi } from '../core/api/water-status-api';
 import { userFromToken } from '../core/auth/token';
 import { RealtimeClient } from '../core/realtime/realtime-client';
 import { defaultSocketFactory } from '../core/realtime/socket-factory';
-import { InMemoryLimitStore } from '../core/limits/limits';
-import { InMemoryPendingLotStore } from '../core/waste/pending-lot';
 import { ApiReportDataSource } from '../core/reports/report-data-source';
 import { FlashProvider, useFlash } from './components/Flash';
 import { LoginPage } from './LoginPage';
 import { buildPages } from './pages';
 import { AppShell } from './shell/AppShell';
+import { UserProvider } from './UserContext';
 import { useAuth } from './useAuth';
+import { useSessionStores } from './useSessionStores';
 
 const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
@@ -44,11 +44,10 @@ function AppContent(): JSX.Element {
   const waterStatusApi = useMemo(() => new WaterStatusApi(apiUrl, () => auth.token), [auth.token]);
   const createRealtime = useCallback(() => new RealtimeClient(apiUrl, defaultSocketFactory), []);
   const getToken = useCallback(() => auth.token, [auth.token]);
-  // ADAPTERS EM MEMORIA (R03/R08): um par por sessao de login; somem ao recarregar.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const limitStore = useMemo(() => new InMemoryLimitStore(), [auth.token]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const pendingLotStore = useMemo(() => new InMemoryPendingLotStore(), [auth.token]);
+  const user = useMemo(() => userFromToken(auth.token), [auth.token]);
+  // ADAPTERS EM MEMORIA (R03/R08): um conjunto por SESSAO (quem esta logado); somem
+  // ao sair e ao recarregar, mas nao quando o token e renovado.
+  const { limitStore, pendingLotStore } = useSessionStores(user ? (user.email ?? user.name) : null);
   const reportSource = useMemo(
     () => new ApiReportDataSource({ sensorApi, readingApi, lotApi, wasteApi: api }),
     [sensorApi, readingApi, lotApi, api],
@@ -80,7 +79,6 @@ function AppContent(): JSX.Element {
       readingApi,
     ],
   );
-  const user = useMemo(() => userFromToken(auth.token), [auth.token]);
 
   const logout = useCallback(() => {
     auth.logout();
@@ -95,7 +93,9 @@ function AppContent(): JSX.Element {
             {auth.error}
           </p>
         )}
-        <AppShell user={user} pages={pages} onLogout={logout} />
+        <UserProvider user={user}>
+          <AppShell user={user} pages={pages} onLogout={logout} />
+        </UserProvider>
       </>
     );
   }

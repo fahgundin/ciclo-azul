@@ -45,8 +45,22 @@ export interface AlertInput {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function limitAlert(id: string, name: string, used: number, limit: number): Alert | null {
+export type LimitLevel = 'ok' | 'warn' | 'crit';
+
+/**
+ * Nivel do consumo frente ao limite: critico so quando PASSA do limite (exatamente 100%
+ * e aviso); aviso a partir de NEAR_LIMIT_RATIO. Fonte unica da regra: alerta e barra usam esta.
+ */
+export function limitLevel(used: number, limit: number): LimitLevel {
   if (used > limit) {
+    return 'crit';
+  }
+  return used >= limit * NEAR_LIMIT_RATIO ? 'warn' : 'ok';
+}
+
+function limitAlert(id: string, name: string, used: number, limit: number): Alert | null {
+  const level = limitLevel(used, limit);
+  if (level === 'crit') {
     return {
       id: `limit-${id}-exceeded`,
       kind: 'limit',
@@ -55,7 +69,7 @@ function limitAlert(id: string, name: string, used: number, limit: number): Aler
       body: `Consumo de hoje em ${formatLiters(used)}, acima do limite de ${formatLiters(limit)}.`,
     };
   }
-  if (used >= limit * NEAR_LIMIT_RATIO) {
+  if (level === 'warn') {
     return {
       id: `limit-${id}-near`,
       kind: 'limit',

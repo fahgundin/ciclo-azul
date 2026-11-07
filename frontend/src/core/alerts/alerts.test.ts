@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { UnitConsumptionStatus, WasteTypeView } from '@ciclo-azul/contracts';
 import { NO_LIMITS, type ConsumptionLimits } from '../limits/limits';
 import type { PendingLot } from '../waste/pending-lot';
-import { evaluateAlerts, type AlertInput } from './alerts';
+import { NEAR_LIMIT_RATIO, evaluateAlerts, limitLevel, type AlertInput } from './alerts';
 
 const NOW = new Date('2026-11-07T12:00:00.000Z');
 const TYPES: WasteTypeView[] = [{ id: 'wt-1', name: 'Óleo', classification: 'Metal pesado' }];
@@ -188,5 +188,30 @@ describe('evaluateAlerts — ordem', () => {
     );
     expect(alerts.map((a) => a.level)).toEqual(['crit', 'crit', 'warn']);
     expect(alerts[2]?.kind).toBe('sensor');
+  });
+});
+
+describe('limitLevel (regra unica de alerta e barra)', () => {
+  it('ok abaixo de 80%, aviso a partir de 80%, critico so ACIMA de 100%', () => {
+    expect(limitLevel(799, 1000)).toBe('ok');
+    expect(limitLevel(1000 * NEAR_LIMIT_RATIO, 1000)).toBe('warn');
+    expect(limitLevel(1000, 1000)).toBe('warn'); // exatamente 100% ainda e aviso
+    expect(limitLevel(1000.01, 1000)).toBe('crit');
+  });
+
+  it('o alerta gerado concorda com o nivel', () => {
+    const limits: ConsumptionLimits = { general: null, units: { a: 1000 } };
+    const level = (used: number) =>
+      evaluateAlerts({
+        now: NOW,
+        statuses: [],
+        consumptionToday: { a: used },
+        limits,
+        pendingLots: [],
+        wasteTypes: [],
+      })[0]?.level;
+    expect(level(500)).toBeUndefined();
+    expect(level(800)).toBe('warn');
+    expect(level(1001)).toBe('crit');
   });
 });

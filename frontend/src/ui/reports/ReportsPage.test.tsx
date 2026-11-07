@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiError } from '../../core/api/api-error';
 import type { ReportDataSource, ReportSourceData } from '../../core/reports/report-data-source';
@@ -110,6 +110,7 @@ describe('ReportsPage (R09 / HU09)', () => {
     expect(mime).toBe('text/csv;charset=utf-8');
     expect(content.startsWith('﻿')).toBe(true);
     expect(content).toContain('"RESÍDUOS"');
+    expect(content).toContain('Atenção: Gerado no navegador');
     expect(content).toContain('"l-1";"Óleo de refrigeração"');
     expect(screen.getByRole('status')).toHaveTextContent('Arquivo CSV gerado.');
   });
@@ -145,6 +146,35 @@ describe('ReportsPage (R09 / HU09)', () => {
     await screen.findByRole('article');
     await user.selectOptions(screen.getByLabelText('Período'), '7');
     expect(screen.queryByRole('article')).not.toBeInTheDocument();
+  });
+
+  // Bug da revisao do #55: trocar o filtro durante a geracao gravava o relatorio do filtro antigo.
+  it('desabilita tipo e periodo enquanto gera, para o relatorio sempre bater com o filtro', async () => {
+    let release: (data: ReportSourceData) => void = () => undefined;
+    const collect = vi.fn(
+      () =>
+        new Promise<ReportSourceData>((resolve) => {
+          release = resolve;
+        }),
+    );
+    const user = userEvent.setup();
+    render(
+      <FlashProvider>
+        <ReportsPage source={{ collect }} now={() => NOW} />
+      </FlashProvider>,
+    );
+
+    await generate(user);
+    expect(screen.getByRole('button', { name: 'Gerando…' })).toBeDisabled();
+    expect(screen.getByLabelText('Tipo de relatório')).toBeDisabled();
+    expect(screen.getByLabelText('Período')).toBeDisabled();
+
+    await act(async () => release(DATA));
+
+    const report = await screen.findByRole('article');
+    expect(report).toHaveTextContent('Conformidade ambiental completa');
+    expect(screen.getByLabelText('Tipo de relatório')).toBeEnabled();
+    expect(screen.getByLabelText('Período')).toBeEnabled();
   });
 
   it('relatorio so de agua nao traz a tabela de residuos', async () => {
