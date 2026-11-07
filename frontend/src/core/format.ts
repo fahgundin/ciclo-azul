@@ -13,6 +13,11 @@ const dateTimeFormat = new Intl.DateTimeFormat('pt-BR', {
   minute: '2-digit',
 });
 
+/** Numero no padrao pt-BR, ate duas casas decimais (ex.: 1.234,5). */
+export function formatNumber(value: number): string {
+  return litersFormat.format(value);
+}
+
 /** Volume em litros no padrao pt-BR (ex.: 1.234,5 L). */
 export function formatLiters(value: number): string {
   return `${litersFormat.format(value)} L`;

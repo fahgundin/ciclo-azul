@@ -48,20 +48,22 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Bem-vindo ao Ciclo Azul' })).toBeInTheDocument();
   });
 
-  it('Gestor Ambiental logado cai em Residuos e carrega os tipos com o token', async () => {
+  it('Gestor Ambiental logado cai em Residuos (lotes) e carrega os dados com o token', async () => {
     login(['gestor-ambiental']);
     renderApp();
 
-    expect(await screen.findByRole('heading', { name: 'Tipos de resíduo' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Destinação de lotes' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Resíduos' })).toHaveAttribute('aria-current', 'page');
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/waste-types');
+    const urls = fetchMock.mock.calls.map((call) => String(call[0]));
+    expect(urls.some((url) => url.includes('/waste-lots'))).toBe(true);
+    expect(urls.some((url) => url.includes('/waste-types'))).toBe(true);
   });
 
   it('o retorno do login (/callback) com sessao ativa abre a primeira tela', async () => {
     login(['gestor-ambiental']);
     renderApp('/callback');
-    expect(await screen.findByRole('heading', { name: 'Tipos de resíduo' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Destinação de lotes' })).toBeInTheDocument();
   });
 
   it('Operador logado cai em Sensores e carrega os sensores com o token', async () => {
@@ -85,7 +87,7 @@ describe('App', () => {
     login(['gestor-ambiental']);
     renderApp();
     const user = userEvent.setup();
-    await screen.findByRole('heading', { name: 'Tipos de resíduo' });
+    await screen.findByRole('heading', { name: 'Destinação de lotes' });
 
     await user.click(screen.getByRole('button', { name: 'Minha conta' }));
     await user.click(screen.getByRole('button', { name: 'Sair' }));
