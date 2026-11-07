@@ -6,6 +6,7 @@ import type { RealtimeClient } from '../../core/realtime/realtime-client';
 import {
   MAX_CHART_POINTS,
   applyReadingEvent,
+  mergeStatuses,
   refreshStates,
   type ChartPoint,
 } from '../../core/water/consumption';
@@ -13,7 +14,7 @@ import {
 /** Parte do RealtimeClient que o painel usa (permite injetar um fake nos testes). */
 export type RealtimeLike = Pick<
   RealtimeClient,
-  'connect' | 'subscribeUnit' | 'onReading' | 'disconnect'
+  'connect' | 'subscribeUnit' | 'onReading' | 'onReconnect' | 'disconnect'
 >;
 
 /** A cada quantos ms o estado e recalculado para detectar "Sem dados recentes". */
@@ -25,15 +26,28 @@ interface Options {
   getToken: () => string | null;
   now?: () => Date;
   tickMs?: number;
+  /**
+   * Quantas leituras ao vivo guardar por unidade (padrao: as do grafico). Quem SOMA
+   * leituras (consumo do dia) precisa de todas as da sessao: com o teto do grafico, as
+   * mais antigas sairiam da soma sem nunca terem entrado no historico buscado.
+   */
+  maxLivePoints?: number;
 }
 
 export interface UseWaterStatus {
   statuses: UnitConsumptionStatus[];
   loading: boolean;
+  /** Ha uma atualizacao (GET /water-status) em andamento. */
+  refreshing: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-  /** Leituras recebidas ao vivo nesta sessao, por unidade (ultimas MAX_CHART_POINTS). */
+  /** Leituras recebidas ao vivo nesta sessao, por unidade (ultimas `maxLivePoints`). */
   liveReadings: Record<string, ChartPoint[]>;
+  /**
+   * Quantas vezes a conexao voltou depois de cair. Leituras enviadas enquanto estava
+   * fora nao chegam pelo WebSocket: quem guarda historico deve rebuscá-lo quando muda.
+   */
+  reconnects: number;
 }
 
 /**
@@ -50,27 +64,45 @@ export function useWaterStatus({
   getToken,
   now = () => new Date(),
   tickMs = DEFAULT_TICK_MS,
+  maxLivePoints = MAX_CHART_POINTS,
 }: Options): UseWaterStatus {
   const [statuses, setStatuses] = useState<UnitConsumptionStatus[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [liveReadings, setLiveReadings] = useState<Record<string, ChartPoint[]>>({});
   const [client, setClient] = useState<RealtimeLike | null>(null);
+  const [reconnects, setReconnects] = useState(0);
   const subscribed = useRef(new Map<RealtimeLike, Set<string>>());
   const nowRef = useRef(now);
   nowRef.current = now;
+  const maxLiveRef = useRef(maxLivePoints);
+  maxLiveRef.current = maxLivePoints;
+  const statusesRef = useRef<UnitConsumptionStatus[]>([]);
+  statusesRef.current = statuses;
+  const refreshRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   const refresh = useCallback(async () => {
+    setRefreshing(true);
     try {
       const list = await statusApi.list();
-      setStatuses(refreshStates(list, nowRef.current()));
+      // Leitura que chegou pelo WebSocket durante a requisicao nao pode ser sobrescrita.
+      setStatuses((current) =>
+        refreshStates(
+          mergeStatuses(current, refreshStates(list, nowRef.current())),
+          nowRef.current(),
+        ),
+      );
       setError(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Falha ao carregar o consumo');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [statusApi]);
+
+  refreshRef.current = refresh;
 
   useEffect(() => {
     void refresh();
@@ -92,12 +124,25 @@ export function useWaterStatus({
         [event.unitId]: [
           ...(current[event.unitId] ?? []),
           { t: Date.parse(event.timestamp), v: event.valueInLiters },
-        ].slice(-MAX_CHART_POINTS),
+        ].slice(-maxLiveRef.current),
       }));
+    });
+    // Reconexao: o servidor perdeu as rooms da conexao anterior. Reassina as unidades
+    // conhecidas e recarrega o estado (leituras podem ter passado enquanto estava fora).
+    const stopReconnect = realtime.onReconnect(() => {
+      const done = new Set<string>();
+      registry.set(realtime, done);
+      for (const { unitId } of statusesRef.current) {
+        realtime.subscribeUnit(unitId);
+        done.add(unitId);
+      }
+      setReconnects((count) => count + 1);
+      void refreshRef.current();
     });
     setClient(realtime);
     return () => {
       stop();
+      stopReconnect();
       realtime.disconnect();
       registry.delete(realtime);
       setClient(null);
@@ -127,5 +172,5 @@ export function useWaterStatus({
     return () => clearInterval(id);
   }, [tickMs]);
 
-  return { statuses, loading, error, refresh, liveReadings };
+  return { statuses, loading, refreshing, error, refresh, liveReadings, reconnects };
 }

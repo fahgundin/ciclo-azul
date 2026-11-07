@@ -3,7 +3,10 @@ import type { WasteLotApi } from '../core/api/waste-lot-api';
 import type { WasteTypeApi } from '../core/api/waste-type-api';
 import type { WaterReadingApi } from '../core/api/water-reading-api';
 import type { WaterStatusApi } from '../core/api/water-status-api';
+import type { LimitStore } from '../core/limits/limits';
+import type { PendingLotStore } from '../core/waste/pending-lot';
 import type { ReportDataSource } from '../core/reports/report-data-source';
+import { AlertsPage } from './alerts/AlertsPage';
 import { ReportsPage } from './reports/ReportsPage';
 import { SensorsPage } from './sensors/SensorsPage';
 import { WaterPage } from './water/WaterPage';
@@ -15,6 +18,8 @@ interface PageDependencies {
   wasteApi: WasteTypeApi;
   lotApi: WasteLotApi;
   reportSource: ReportDataSource;
+  limitStore: LimitStore;
+  pendingLotStore: PendingLotStore;
   waterStatusApi: WaterStatusApi;
   createRealtime: () => RealtimeLike;
   getToken: () => string | null;
@@ -32,6 +37,8 @@ export function buildPages({
   wasteApi,
   lotApi,
   reportSource,
+  limitStore,
+  pendingLotStore,
   waterStatusApi,
   createRealtime,
   getToken,
@@ -39,13 +46,24 @@ export function buildPages({
   readingApi,
 }: PageDependencies): PageRegistry {
   return {
-    '/residuos': <WastePage wasteApi={wasteApi} lotApi={lotApi} />,
+    '/residuos': <WastePage wasteApi={wasteApi} lotApi={lotApi} pendingStore={pendingLotStore} />,
     '/agua': (
       <WaterPage
         statusApi={waterStatusApi}
         readingApi={readingApi}
         createRealtime={createRealtime}
         getToken={getToken}
+      />
+    ),
+    '/alertas': (
+      <AlertsPage
+        statusApi={waterStatusApi}
+        readingApi={readingApi}
+        wasteApi={wasteApi}
+        createRealtime={createRealtime}
+        getToken={getToken}
+        limitStore={limitStore}
+        pendingLotStore={pendingLotStore}
       />
     ),
     '/relatorios': <ReportsPage source={reportSource} />,

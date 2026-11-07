@@ -1,10 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { afterEach, describe, it, expect, vi } from 'vitest';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { WasteLotView, WasteTypeView } from '@ciclo-azul/contracts';
 import { ApiError } from '../../core/api/api-error';
 import type { WasteLotApi } from '../../core/api/waste-lot-api';
 import type { WasteTypeApi } from '../../core/api/waste-type-api';
+import { InMemoryPendingLotStore, type PendingLotStore } from '../../core/waste/pending-lot';
 import { FlashProvider } from '../components/Flash';
 import { WasteLotsPanel } from './WasteLotsPanel';
 
@@ -32,15 +33,21 @@ function setup({
   list = vi.fn().mockResolvedValue(lots),
   register = vi.fn(),
   types = vi.fn().mockResolvedValue(TYPES),
+  pendingStore = new InMemoryPendingLotStore() as PendingLotStore,
 } = {}) {
   const lotApi = { list, register } as unknown as WasteLotApi;
   const wasteApi = { list: types } as unknown as WasteTypeApi;
   render(
     <FlashProvider>
-      <WasteLotsPanel lotApi={lotApi} wasteApi={wasteApi} now={() => NOW} />
+      <WasteLotsPanel
+        lotApi={lotApi}
+        wasteApi={wasteApi}
+        pendingStore={pendingStore}
+        now={() => NOW}
+      />
     </FlashProvider>,
   );
-  return { list, register, user: userEvent.setup() };
+  return { list, register, pendingStore, user: userEvent.setup() };
 }
 
 describe('WasteLotsPanel (R06)', () => {
@@ -112,5 +119,131 @@ describe('WasteLotsPanel (R06)', () => {
       'Destinação registrada. O lote consta como Destinado.',
     );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('WasteLotsPanel — lotes aguardando destinacao (R08, adapter em memoria)', () => {
+  const T0 = new Date(2026, 10, 1, 12, 0);
+
+  it('anota que os lotes pendentes ficam so neste navegador', async () => {
+    setup();
+    expect(await screen.findByText(/adapter em memória/)).toBeInTheDocument();
+    expect(screen.getByText('Nenhum lote aguardando destinação.')).toBeInTheDocument();
+  });
+
+  it('cria um lote pendente com o prazo e a etiqueta "No prazo"', async () => {
+    const { pendingStore, user } = setup();
+    await screen.findByText('Nenhum lote aguardando destinação.');
+
+    await user.click(screen.getByRole('button', { name: 'Novo lote' }));
+    const dialog = screen.getByRole('dialog', { name: 'Novo lote' });
+    await user.selectOptions(within(dialog).getByLabelText('Tipo de resíduo'), 'wt-1');
+    await user.type(within(dialog).getByLabelText('Quantidade gerada'), '340');
+    await user.click(within(dialog).getByRole('button', { name: 'Criar lote' }));
+
+    const list = screen.getByRole('list', { name: 'Lotes aguardando destinação' });
+    expect(list).toHaveTextContent('P-0001 · Óleo de refrigeração');
+    expect(list).toHaveTextContent('Quantidade 340');
+    expect(within(list).getByText('No prazo')).toBeInTheDocument();
+    expect(pendingStore.list()).toHaveLength(1);
+    expect(screen.getByRole('status')).toHaveTextContent('Lote criado. Ele aguarda a destinação.');
+  });
+
+  it('mostra "Prazo vencido" quando o prazo do lote ja expirou', async () => {
+    const pendingStore = new InMemoryPendingLotStore();
+    pendingStore.add(
+      { wasteTypeId: 'wt-1', quantity: 5, deadlineDays: 10 },
+      new Date(2026, 9, 1, 12, 0),
+    );
+    setup({ pendingStore });
+    const list = await screen.findByRole('list', { name: 'Lotes aguardando destinação' });
+    expect(within(list).getByText('Prazo vencido')).toBeInTheDocument();
+  });
+
+  // Revisao do #57: a etiqueta era calculada so na renderizacao e nao mudava sozinha.
+  describe('relogio da etiqueta de prazo', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('um lote que vence com a tela aberta passa de "No prazo" para "Prazo vencido" sozinho', async () => {
+      vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
+      let current = new Date(2026, 10, 1, 12, 0);
+      const pendingStore = new InMemoryPendingLotStore();
+      pendingStore.add({ wasteTypeId: 'wt-1', quantity: 5, deadlineDays: 1 }, current);
+      const lotApi = { list: vi.fn().mockResolvedValue([]) } as unknown as WasteLotApi;
+      const wasteApi = { list: vi.fn().mockResolvedValue(TYPES) } as unknown as WasteTypeApi;
+      render(
+        <FlashProvider>
+          <WasteLotsPanel
+            lotApi={lotApi}
+            wasteApi={wasteApi}
+            pendingStore={pendingStore}
+            now={() => current}
+            tickMs={60_000}
+          />
+        </FlashProvider>,
+      );
+      const list = await screen.findByRole('list', { name: 'Lotes aguardando destinação' });
+      expect(within(list).getByText('No prazo')).toBeInTheDocument();
+
+      current = new Date(2026, 10, 2, 12, 1); // 1 dia e 1 minuto depois: o prazo de 1 dia venceu
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+
+      expect(within(list).getByText('Prazo vencido')).toBeInTheDocument();
+      expect(within(list).queryByText('No prazo')).not.toBeInTheDocument();
+    });
+  });
+
+  it('registrar a destinacao de um lote pendente preenche o formulario, grava na API e remove o pendente', async () => {
+    const pendingStore = new InMemoryPendingLotStore();
+    pendingStore.add({ wasteTypeId: 'wt-2', quantity: 90, deadlineDays: 30 }, T0);
+    const created = lot('novo', { wasteTypeId: 'wt-2', quantity: 90 });
+    const list = vi.fn().mockResolvedValueOnce([]).mockResolvedValue([created]);
+    const { register, user } = setup({
+      pendingStore,
+      list,
+      register: vi.fn().mockResolvedValue(created),
+    });
+    const pendingList = await screen.findByRole('list', { name: 'Lotes aguardando destinação' });
+
+    await user.click(within(pendingList).getByRole('button', { name: 'Registrar destinação' }));
+    const dialog = screen.getByRole('dialog', { name: 'Registrar destinação' });
+    expect(within(dialog).getByLabelText('Tipo de resíduo')).toHaveValue('wt-2');
+    expect(within(dialog).getByLabelText('Quantidade destinada')).toHaveValue(90);
+
+    await user.type(within(dialog).getByLabelText('Local da destinação'), 'Cubatão/SP');
+    await user.type(within(dialog).getByLabelText('Empresa receptora'), 'Recicla Metais Brasil');
+    await user.type(within(dialog).getByLabelText('Licença da empresa'), 'LO-8812/2024');
+    await user.type(within(dialog).getByLabelText(/Comprovante de destinação/), 'mtr-1.pdf');
+    await user.click(within(dialog).getByRole('button', { name: 'Registrar destinação' }));
+
+    expect(register).toHaveBeenCalledWith(
+      expect.objectContaining({ wasteTypeId: 'wt-2', quantity: 90, location: 'Cubatão/SP' }),
+    );
+    expect(await screen.findByText('Nenhum lote aguardando destinação.')).toBeInTheDocument();
+    expect(pendingStore.list()).toEqual([]);
+  });
+
+  it('se o backend recusar a destinacao, o lote continua pendente', async () => {
+    const pendingStore = new InMemoryPendingLotStore();
+    pendingStore.add({ wasteTypeId: 'wt-1', quantity: 5, deadlineDays: 30 }, T0);
+    const { user } = setup({
+      pendingStore,
+      register: vi
+        .fn()
+        .mockRejectedValue(new ApiError('O comprovante de destinação é obrigatório', 400)),
+    });
+    const pendingList = await screen.findByRole('list', { name: 'Lotes aguardando destinação' });
+    await user.click(within(pendingList).getByRole('button', { name: 'Registrar destinação' }));
+    const dialog = screen.getByRole('dialog');
+    await user.type(within(dialog).getByLabelText('Local da destinação'), 'X');
+    await user.type(within(dialog).getByLabelText('Empresa receptora'), 'Y');
+    await user.type(within(dialog).getByLabelText('Licença da empresa'), 'Z');
+    await user.type(within(dialog).getByLabelText(/Comprovante de destinação/), 'a');
+    await user.click(within(dialog).getByRole('button', { name: 'Registrar destinação' }));
+
+    expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
+    expect(pendingStore.list()).toHaveLength(1);
   });
 });

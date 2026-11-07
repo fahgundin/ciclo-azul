@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest';
 import type { ReadingEvent, UnitConsumptionStatus } from '@ciclo-azul/contracts';
 import {
   applyReadingEvent,
+  dailyConsumption,
   deriveState,
   mergeChartPoints,
+  mergeStatuses,
   refreshStates,
   toChartPoints,
 } from './consumption';
@@ -128,6 +130,35 @@ describe('applyReadingEvent', () => {
   });
 });
 
+describe('mergeStatuses (snapshot do REST x leitura ao vivo)', () => {
+  it('o snapshot mais antigo NAO sobrescreve a leitura que chegou pelo WebSocket durante a requisicao', () => {
+    const current = [status('dc-sp1', minutesAgo(0), 99)]; // chegou ao vivo
+    const snapshot = [status('dc-sp1', minutesAgo(2), 10)]; // GET respondeu com o estado antigo
+    expect(mergeStatuses(current, snapshot)).toEqual(current);
+  });
+
+  it('o snapshot mais novo (ou igual) vence', () => {
+    const current = [status('dc-sp1', minutesAgo(2), 10)];
+    const newer = [status('dc-sp1', minutesAgo(0), 99)];
+    expect(mergeStatuses(current, newer)).toEqual(newer);
+    expect(mergeStatuses(newer, newer)).toEqual(newer);
+  });
+
+  it('unidade sem leitura no snapshot nao apaga a leitura ao vivo; unidades novas entram', () => {
+    const current = [status('dc-sp1', minutesAgo(0), 99)];
+    const snapshot = [status('dc-sp1', null), status('dc-sp2', minutesAgo(1), 5)];
+    const merged = mergeStatuses(current, snapshot);
+    expect(merged.map((s) => s.unitId)).toEqual(['dc-sp1', 'dc-sp2']);
+    expect(merged[0]!.currentValueInLiters).toBe(99);
+  });
+
+  it('mantem a unidade que so a tela conhece e ordena por unidade', () => {
+    const current = [status('dc-zz', minutesAgo(0), 1)];
+    const snapshot = [status('dc-aa', minutesAgo(1), 2)];
+    expect(mergeStatuses(current, snapshot).map((s) => s.unitId)).toEqual(['dc-aa', 'dc-zz']);
+  });
+});
+
 describe('toChartPoints / mergeChartPoints', () => {
   const r = (minutes: number, v: number) => ({ timestamp: minutesAgo(minutes), valueInLiters: v });
 
@@ -149,5 +180,27 @@ describe('toChartPoints / mergeChartPoints', () => {
   it('merge respeita o limite de pontos', () => {
     const history = toChartPoints([r(5, 1), r(4, 2), r(3, 3)]);
     expect(mergeChartPoints(history, [], 2).map((p) => p.v)).toEqual([2, 3]);
+  });
+});
+
+describe('dailyConsumption', () => {
+  const point = (iso: string, v: number) => ({ t: Date.parse(iso), v });
+  const day = new Date('2026-11-07T15:00:00.000Z');
+
+  it('soma so as leituras do dia (UTC), inclusive a de meia-noite', () => {
+    const total = dailyConsumption(
+      [
+        point('2026-11-06T23:59:59.000Z', 100), // ontem
+        point('2026-11-07T00:00:00.000Z', 10), // meia-noite UTC: conta
+        point('2026-11-07T10:00:00.000Z', 20.255),
+        point('2026-11-08T00:00:00.000Z', 100), // amanha
+      ],
+      day,
+    );
+    expect(total).toBe(30.26);
+  });
+
+  it('sem leituras no dia e zero', () => {
+    expect(dailyConsumption([], day)).toBe(0);
   });
 });

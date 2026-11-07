@@ -55,7 +55,7 @@ export function WaterPage({
   now,
   tickMs,
 }: WaterPageProps): JSX.Element {
-  const { statuses, loading, error, refresh, liveReadings } = useWaterStatus({
+  const { statuses, loading, refreshing, error, refresh, liveReadings } = useWaterStatus({
     statusApi,
     createRealtime,
     getToken,
@@ -109,8 +109,14 @@ export function WaterPage({
       <h1>Consumo de água</h1>
 
       <div className="actions">
-        <button type="button" className="btn" onClick={() => void refresh()}>
-          Atualizar
+        <button
+          type="button"
+          className="btn"
+          onClick={() => void refresh()}
+          disabled={refreshing}
+          aria-busy={refreshing}
+        >
+          {refreshing ? 'Atualizando…' : 'Atualizar'}
         </button>
       </div>
       <p className="hint">

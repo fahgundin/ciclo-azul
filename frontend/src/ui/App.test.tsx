@@ -118,4 +118,14 @@ describe('App', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Sessão encerrada.');
     expect(window.localStorage.getItem(TOKEN_KEY)).toBeNull();
   });
+
+  it('disponibiliza o usuario logado para as telas (ex.: "gerado por" no relatorio)', async () => {
+    login(['gestor-ambiental']);
+    renderApp('/relatorios');
+
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Gerar relatório' }));
+
+    // a pre-visualizacao e a area de impressao repetem o texto
+    expect((await screen.findAllByText(/por Marina Costa/)).length).toBeGreaterThan(0);
+  });
 });

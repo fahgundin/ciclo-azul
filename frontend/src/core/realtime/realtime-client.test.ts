@@ -65,4 +65,33 @@ describe('RealtimeClient (core/realtime)', () => {
 
     expect(received).toEqual([]);
   });
+
+  it('avisa os handlers de reconexao so a partir da segunda conexao', () => {
+    const fake = makeFakeSocket();
+    const client = new RealtimeClient('ws://x', () => fake.socket);
+    const onReconnect = vi.fn();
+    client.connect('t');
+    client.onReconnect(onReconnect);
+
+    fake.listeners['connect'](undefined); // primeira conexao
+    expect(onReconnect).not.toHaveBeenCalled();
+
+    fake.listeners['connect'](undefined); // queda e volta: o servidor perdeu as rooms
+    fake.listeners['connect'](undefined);
+    expect(onReconnect).toHaveBeenCalledTimes(2);
+  });
+
+  it('permite cancelar o handler de reconexao', () => {
+    const fake = makeFakeSocket();
+    const client = new RealtimeClient('ws://x', () => fake.socket);
+    const onReconnect = vi.fn();
+    client.connect('t');
+    const off = client.onReconnect(onReconnect);
+    off();
+
+    fake.listeners['connect'](undefined);
+    fake.listeners['connect'](undefined);
+
+    expect(onReconnect).not.toHaveBeenCalled();
+  });
 });

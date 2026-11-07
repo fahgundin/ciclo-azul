@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ReadingEvent, UnitConsumptionStatus, WaterReadingView } from '@ciclo-azul/contracts';
+import type { UnitConsumptionStatus, WaterReadingView } from '@ciclo-azul/contracts';
 import { ApiError } from '../../core/api/api-error';
+import { fakeRealtime } from '../../test-helpers/fake-realtime';
 import { WaterPage } from './WaterPage';
-import type { RealtimeLike } from './useWaterStatus';
 
 const NOW = new Date('2026-11-07T12:00:00.000Z');
 const minutesAgo = (m: number) => new Date(NOW.getTime() - m * 60_000).toISOString();
@@ -23,25 +23,6 @@ const status = (
   lastReadingType,
   staleAfterMinutes: 15,
 });
-
-/** Cliente de tempo real falso: guarda os handlers e deixa o teste "enviar" leituras. */
-function fakeRealtime() {
-  const handlers = new Set<(event: ReadingEvent) => void>();
-  const realtime = {
-    connect: vi.fn(),
-    subscribeUnit: vi.fn(),
-    disconnect: vi.fn(),
-    onReading: vi.fn((handler: (event: ReadingEvent) => void) => {
-      handlers.add(handler);
-      return () => handlers.delete(handler);
-    }),
-  };
-  return {
-    realtime: realtime as unknown as RealtimeLike,
-    mock: realtime,
-    emit: (event: ReadingEvent) => act(() => handlers.forEach((h) => h(event))),
-  };
-}
 
 const reading = (unitId: string, timestamp: string, valueInLiters: number): WaterReadingView => ({
   sensorId: 'sn-1',
@@ -198,6 +179,105 @@ describe('WaterPage (R05 / HU03)', () => {
   it('mostra o erro do backend ao falhar', async () => {
     setup({ list: vi.fn().mockRejectedValue(new ApiError('Erro 403', 403)) });
     expect(await screen.findByRole('alert')).toHaveTextContent('Erro 403');
+  });
+
+  // Bug da revisao do #56: o servidor perde as rooms quando a conexao cai.
+  it('ao reconectar, assina de novo as unidades e recarrega o estado', async () => {
+    const list = vi
+      .fn()
+      .mockResolvedValueOnce([
+        status('dc-cps', minutesAgo(1), 1, 'live'),
+        status('dc-sp1', minutesAgo(1), 1, 'live'),
+      ])
+      .mockResolvedValue([
+        status('dc-cps', minutesAgo(1), 1, 'live'),
+        status('dc-sp1', minutesAgo(0), 99, 'live'),
+      ]);
+    const { rt } = setup({ list });
+    await screen.findByRole('listitem', { name: 'Unidade dc-sp1' });
+    expect(rt.mock.subscribeUnit).toHaveBeenCalledTimes(2);
+
+    await rt.reconnect();
+
+    // reassina cada unidade (mais 2 chamadas) e refaz o GET /water-status
+    expect(rt.mock.subscribeUnit).toHaveBeenCalledTimes(4);
+    expect(rt.mock.subscribeUnit).toHaveBeenLastCalledWith('dc-sp1');
+    await waitFor(() => expect(list).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(card('dc-sp1')).toHaveTextContent('99 L'));
+  });
+
+  it('depois de reconectar, uma unidade nova ainda e assinada so uma vez', async () => {
+    const list = vi
+      .fn()
+      .mockResolvedValueOnce([status('dc-sp1', minutesAgo(1), 1, 'live')])
+      .mockResolvedValue([
+        status('dc-sp1', minutesAgo(1), 1, 'live'),
+        status('dc-sp2', minutesAgo(1), 2, 'live'),
+      ]);
+    const { rt } = setup({ list });
+    await screen.findByRole('listitem', { name: 'Unidade dc-sp1' });
+
+    await rt.reconnect();
+    expect(await screen.findByRole('listitem', { name: 'Unidade dc-sp2' })).toBeInTheDocument();
+
+    const calls = rt.mock.subscribeUnit.mock.calls.map(([unit]) => unit);
+    expect(calls.filter((unit) => unit === 'dc-sp2')).toHaveLength(1);
+    expect(calls.filter((unit) => unit === 'dc-sp1')).toHaveLength(2); // inicial + reconexao
+  });
+
+  // Revisao do #56: "Atualizar" nao dava retorno enquanto a requisicao estava em andamento.
+  it('Atualizar mostra "Atualizando…" e fica desabilitado enquanto busca', async () => {
+    let release: (value: UnitConsumptionStatus[]) => void = () => undefined;
+    const list = vi
+      .fn()
+      .mockResolvedValueOnce([status('dc-sp1', minutesAgo(1), 1, 'live')])
+      .mockImplementationOnce(
+        () =>
+          new Promise<UnitConsumptionStatus[]>((resolve) => {
+            release = resolve;
+          }),
+      );
+    setup({ list });
+    await screen.findByRole('listitem', { name: 'Unidade dc-sp1' });
+
+    await act(async () => {
+      screen.getByRole('button', { name: 'Atualizar' }).click();
+    });
+    expect(screen.getByRole('button', { name: 'Atualizando…' })).toBeDisabled();
+
+    await act(async () => release([status('dc-sp1', minutesAgo(1), 1, 'live')]));
+    expect(screen.getByRole('button', { name: 'Atualizar' })).toBeEnabled();
+  });
+
+  // Revisao do #56: o snapshot (mais antigo) sobrescrevia a leitura que chegou ao vivo no meio do GET.
+  it('Atualizar nao sobrescreve a leitura que chegou ao vivo enquanto o GET estava em voo', async () => {
+    let release: (value: UnitConsumptionStatus[]) => void = () => undefined;
+    const list = vi
+      .fn()
+      .mockResolvedValueOnce([status('dc-sp1', minutesAgo(3), 50, 'live')])
+      .mockImplementationOnce(
+        () =>
+          new Promise<UnitConsumptionStatus[]>((resolve) => {
+            release = resolve;
+          }),
+      );
+    const { rt } = setup({ list });
+    await screen.findByRole('listitem', { name: 'Unidade dc-sp1' });
+
+    await act(async () => {
+      screen.getByRole('button', { name: 'Atualizar' }).click();
+    });
+    await rt.emit({
+      unitId: 'dc-sp1',
+      sensorId: 'sn-1',
+      timestamp: minutesAgo(0),
+      valueInLiters: 77.5,
+      readingType: 'sensor',
+    });
+    // o GET responde com o estado de ANTES da leitura ao vivo
+    await act(async () => release([status('dc-sp1', minutesAgo(3), 50, 'live')]));
+
+    expect(card('dc-sp1')).toHaveTextContent('77,5 L');
   });
 
   it('Atualizar busca de novo e passa a assinar a unidade nova', async () => {

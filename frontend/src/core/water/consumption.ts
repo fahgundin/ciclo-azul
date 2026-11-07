@@ -75,6 +75,34 @@ export function applyReadingEvent(
   return [...statuses.filter((status) => status.unitId !== event.unitId), updated].sort(byUnit);
 }
 
+/**
+ * Junta o estado atual da tela com um snapshot do REST (`GET /water-status`). O snapshot
+ * pode ser mais ANTIGO que uma leitura recebida pelo WebSocket enquanto a requisicao
+ * estava em voo: por unidade, vence quem tem o `lastReadingAt` mais recente (empate: o
+ * snapshot). Unidade que so a tela conhece (veio ao vivo) e mantida.
+ */
+export function mergeStatuses(
+  current: readonly UnitConsumptionStatus[],
+  snapshot: readonly UnitConsumptionStatus[],
+): UnitConsumptionStatus[] {
+  const live = new Map(current.map((status) => [status.unitId, status]));
+  const merged = new Map<string, UnitConsumptionStatus>();
+  for (const fresh of snapshot) {
+    const known = live.get(fresh.unitId);
+    const knownIsNewer =
+      known?.lastReadingAt != null &&
+      (fresh.lastReadingAt === null ||
+        Date.parse(known.lastReadingAt) > Date.parse(fresh.lastReadingAt));
+    merged.set(fresh.unitId, knownIsNewer && known ? known : fresh);
+  }
+  for (const [unitId, status] of live) {
+    if (!merged.has(unitId)) {
+      merged.set(unitId, status);
+    }
+  }
+  return [...merged.values()].sort(byUnit);
+}
+
 /** Ponto de um grafico de linha: instante (ms) e valor em litros. */
 export interface ChartPoint {
   t: number;
@@ -112,4 +140,16 @@ export function mergeChartPoints(
     }
   }
   return merged.sort((a, b) => a.t - b.t).slice(-limit);
+}
+
+/**
+ * Consumo de um dia: soma dos valores das leituras daquele dia (UTC), em litros.
+ * PRESSUPOSTO a confirmar: leituras incrementais (volume por intervalo). Ver
+ * contrato-iot.md, secao 8. O dia e UTC, como as datas de leitura manual.
+ */
+export function dailyConsumption(points: readonly ChartPoint[], day: Date): number {
+  const start = Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate());
+  const end = start + 24 * 60 * 60 * 1000;
+  const total = points.filter((p) => p.t >= start && p.t < end).reduce((sum, p) => sum + p.v, 0);
+  return Math.round(total * 100) / 100;
 }

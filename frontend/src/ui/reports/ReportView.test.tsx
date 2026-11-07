@@ -17,9 +17,22 @@ describe('ReportView', () => {
     const items = screen.getAllByRole('listitem');
     expect(items[0]).toHaveTextContent('Comprovante e licença informados em toda destinação');
     expect(items[0]).toHaveTextContent('Atende');
-    expect(items[1]).toHaveTextContent('Unidades com leitura recente');
+    expect(items[1]).toHaveTextContent('Unidades com leitura recente no momento da geração');
     expect(items[1]).toHaveTextContent('Não atende');
     expect(items[1].querySelector('.tag--warn')).not.toBeNull();
+  });
+
+  it('rotula a coluna de litros como soma das leituras, nao como consumo oficial', () => {
+    render(<ReportView report={FULL_REPORT} />);
+    expect(screen.getByRole('columnheader', { name: 'Soma das leituras (L)' })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Consumo (L)' })).not.toBeInTheDocument();
+  });
+
+  it('leva a ressalva "gerado no navegador / soma das leituras" para dentro do documento (PDF)', () => {
+    render(<ReportView report={FULL_REPORT} />);
+    const note = screen.getByRole('note');
+    expect(note).toHaveTextContent('Gerado no navegador');
+    expect(note).toHaveTextContent('soma das leituras do período');
   });
 
   it('mostra a tabela de consumo em litros com a divisao sensor/manual', () => {

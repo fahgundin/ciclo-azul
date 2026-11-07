@@ -36,6 +36,18 @@ describe('can', () => {
     expect(can(roles, PERMISSIONS.WATER_MONITOR)).toBe(false);
   });
 
+  it('Gestor e Operador veem alertas; Administrador e Diretoria nao', () => {
+    expect(can([APP_ROLES.GESTOR_AMBIENTAL], PERMISSIONS.ALERTS_VIEW)).toBe(true);
+    expect(can([APP_ROLES.OPERADOR], PERMISSIONS.ALERTS_VIEW)).toBe(true);
+    expect(can([APP_ROLES.ADMINISTRADOR], PERMISSIONS.ALERTS_VIEW)).toBe(false);
+    expect(can([APP_ROLES.DIRETORIA], PERMISSIONS.ALERTS_VIEW)).toBe(false);
+  });
+
+  it('so o Gestor define limites de consumo', () => {
+    expect(can([APP_ROLES.GESTOR_AMBIENTAL], PERMISSIONS.WATER_LIMITS)).toBe(true);
+    expect(can([APP_ROLES.OPERADOR], PERMISSIONS.WATER_LIMITS)).toBe(false);
+  });
+
   it('une as permissoes quando o usuario tem mais de um perfil', () => {
     const roles = [APP_ROLES.OPERADOR, APP_ROLES.DIRETORIA];
     expect(can(roles, PERMISSIONS.SENSORS_MANAGE)).toBe(true);

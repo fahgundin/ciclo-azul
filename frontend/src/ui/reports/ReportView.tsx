@@ -1,4 +1,8 @@
-import type { Report } from '../../core/reports/report';
+import {
+  CONSUMPTION_COLUMN_LABEL,
+  REPORT_DISCLAIMER,
+  type Report,
+} from '../../core/reports/report';
 import { reportHasData } from '../../core/reports/export';
 import { formatDateTime, formatDateUtc, formatNumber } from '../../core/format';
 import { Icon } from '../components/Icon';
@@ -48,7 +52,7 @@ export function ReportView({ report }: { report: Report }): JSX.Element {
               <thead>
                 <tr>
                   <th>Unidade</th>
-                  <th>Consumo (L)</th>
+                  <th>{CONSUMPTION_COLUMN_LABEL}</th>
                   <th>Leituras</th>
                   <th>Última leitura</th>
                 </tr>
@@ -105,6 +109,12 @@ export function ReportView({ report }: { report: Report }): JSX.Element {
           </div>
         </section>
       )}
+
+      <footer>
+        <p className="muted report__note" role="note">
+          {REPORT_DISCLAIMER}
+        </p>
+      </footer>
     </article>
   );
 }

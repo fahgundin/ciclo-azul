@@ -78,11 +78,17 @@ describe('reportToCsv', () => {
     expect(lines[1]).toBe('"Período: últimos 30 dias"');
   });
 
+  it('leva a ressalva "gerado no navegador / soma das leituras" no cabecalho do arquivo', () => {
+    expect(lines[2]).toMatch(/^"Atenção: Gerado no navegador/);
+    expect(lines[2]).toContain('soma das leituras do período');
+    expect(lines[3]).toBe('');
+  });
+
   it('traz a secao de consumo com os valores numericos em pt-BR', () => {
     const start = lines.indexOf('"CONSUMO DE ÁGUA"');
     expect(start).toBeGreaterThan(0);
     expect(lines[start + 1]).toBe(
-      '"Unidade";"Consumo (L)";"Leituras";"Leituras de sensor";"Leituras manuais";"Última leitura"',
+      '"Unidade";"Soma das leituras (L)";"Leituras";"Leituras de sensor";"Leituras manuais";"Última leitura"',
     );
     expect(lines[start + 2]).toMatch(/^"dc-sp1";1234,5;3;2;1;"\d{2}\/\d{2}\/2026,? \d{2}:\d{2}"$/);
     expect(lines[start + 3]).toBe('"dc-cps";0;0;0;0;""');
