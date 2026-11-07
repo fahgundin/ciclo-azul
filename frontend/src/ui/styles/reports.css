@@ -1,0 +1,107 @@
+/*
+ * Relatorios: cartao de pre-visualizacao, tabelas e area de impressao (PDF).
+ */
+
+.report-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+
+.report h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.report h3 {
+  margin: var(--space-2) 0 var(--space-1);
+  font-size: 1rem;
+}
+
+.report__checks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report__checks li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-1);
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--color-primary-100);
+}
+
+.tag.tag--warn {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-primary-100);
+  border-radius: var(--radius-sm);
+}
+
+.table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table-wrap th,
+.table-wrap td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--color-primary-100);
+  text-align: left;
+}
+
+.table-wrap th {
+  background: var(--color-primary-50);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+/* Area de impressao: oculta na tela; na impressao, so ela aparece. */
+.print-area {
+  display: none;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  body.printing-report #root {
+    display: none;
+  }
+
+  body.printing-report .print-area {
+    display: block;
+    padding: 12mm;
+    color: #000;
+    font: 12px/1.5 var(--font-sans);
+  }
+
+  .print-area .tag {
+    border: 1px solid #000;
+    background: none;
+    color: #000;
+  }
+
+  .print-area table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+  }
+
+  .print-area th,
+  .print-area td {
+    border: 1px solid #888;
+    padding: 3px 5px;
+  }
+}

@@ -2,6 +2,8 @@ import type { SensorApi } from '../core/api/sensor-api';
 import type { WasteLotApi } from '../core/api/waste-lot-api';
 import type { WasteTypeApi } from '../core/api/waste-type-api';
 import type { WaterReadingApi } from '../core/api/water-reading-api';
+import type { ReportDataSource } from '../core/reports/report-data-source';
+import { ReportsPage } from './reports/ReportsPage';
 import { SensorsPage } from './sensors/SensorsPage';
 import { WastePage } from './waste/WastePage';
 import type { PageRegistry } from './shell/AppShell';
@@ -9,6 +11,7 @@ import type { PageRegistry } from './shell/AppShell';
 interface PageDependencies {
   wasteApi: WasteTypeApi;
   lotApi: WasteLotApi;
+  reportSource: ReportDataSource;
   sensorApi: SensorApi;
   readingApi: WaterReadingApi;
 }
@@ -22,11 +25,13 @@ interface PageDependencies {
 export function buildPages({
   wasteApi,
   lotApi,
+  reportSource,
   sensorApi,
   readingApi,
 }: PageDependencies): PageRegistry {
   return {
     '/residuos': <WastePage wasteApi={wasteApi} lotApi={lotApi} />,
+    '/relatorios': <ReportsPage source={reportSource} />,
     '/sensores': <SensorsPage sensorApi={sensorApi} readingApi={readingApi} />,
   };
 }
