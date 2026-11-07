@@ -18,6 +18,13 @@ export function formatNumber(value: number): string {
   return litersFormat.format(value);
 }
 
+const timeFormat = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+/** Hora local (HH:mm) de um instante em milissegundos. */
+export function formatTime(timestampMs: number): string {
+  return timeFormat.format(new Date(timestampMs));
+}
+
 /** Volume em litros no padrao pt-BR (ex.: 1.234,5 L). */
 export function formatLiters(value: number): string {
   return `${litersFormat.format(value)} L`;

@@ -1,0 +1,37 @@
+/* Painel de consumo de agua: valor atual e grafico de linha. */
+
+.water__value {
+  margin-top: 0.15rem;
+  color: var(--color-primary-900);
+  font-size: 1.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.water__chart {
+  padding: var(--space-1);
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chart__grid {
+  stroke: var(--color-primary-100);
+  stroke-width: 1;
+}
+
+.chart__axis {
+  fill: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.chart__line {
+  fill: none;
+  stroke: var(--color-primary-600);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}

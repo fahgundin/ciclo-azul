@@ -36,7 +36,7 @@
 | Shell, navegação e rotas por perfil | — | #38 | Entregue |
 | Tipos de resíduo (R07) | `/residuos` | #25 | Entregue (antes da migração) |
 | Sensores e leitura manual (R04) | `/sensores` | #39 | Entregue, sobre a API real (com as lacunas abaixo) |
-| Água em tempo real (R05) | `/agua` | #40 | A fazer |
+| Água em tempo real (R05) | `/agua` | #40 | Entregue, sobre a API real (com as diferenças abaixo) |
 | Lotes e destinação (R06) | `/residuos` | #41 | Entregue, sobre a API real (com as lacunas abaixo) |
 | Relatórios (R09) | `/relatorios` | #42 | Entregue, **gerado no navegador** (sem endpoint no backend) |
 | Limites e alertas (R03/R08) | `/alertas` | #43 | A fazer |
@@ -164,6 +164,46 @@ Efeitos na tela de resíduos (#41), que difere do protótipo nestes pontos:
 - **Perfis:** o backend deixa a Diretoria *consultar* os lotes (`GET /waste-lots`), mas
   a rota `/residuos` segue restrita ao Gestor Ambiental (ver "Leitura de tipos de
   resíduo pela Diretoria", abaixo).
+
+### Água em tempo real (R05)
+
+A tela `/agua` usa a **API real**: `GET /water-status` (estado atual de cada unidade) e o
+WebSocket já existente (`RealtimeClient`, evento `reading`). Sem adapter em memória.
+
+Como funciona:
+
+- **Consumo atual** de cada unidade é o valor da última leitura (litros), com o instante
+  e a origem (sensor ou leitura manual). A cada leitura recebida pelo WebSocket, o valor é
+  atualizado sem recarregar (HU03, cenário 1).
+- **"Sem dados recentes"** (HU03, cenário 2): o backend não emite essa transição pelo
+  WebSocket (`contrato-iot.md`, seção 5). O cliente **recalcula o estado a cada 30
+  segundos** com `lastReadingAt` e `staleAfterMinutes` (regra dos 15 minutos; exatamente
+  15 ainda é recente). Uma leitura nova tira a unidade desse estado.
+- **Unidades:** as que `GET /water-status` devolve (com sensor ou com alguma leitura).
+  O cliente assina cada uma no WebSocket ao carregar; uma unidade nova só entra na tela
+  ao tocar em "Atualizar".
+- **Gráfico:** últimas leituras (até 60) da unidade escolhida: histórico de
+  `GET /water-readings` mais as leituras recebidas ao vivo, com o eixo X proporcional ao
+  tempo.
+
+Diferenças em relação ao protótipo e limites conhecidos:
+
+- **Sem limites diários nem barras de % do limite** (R03/R08, #43 — sem backend). Sem
+  "Definir limites de consumo".
+- **Sem vazão (m³/h) nem consumo "hoje"**: a API só dá o valor da última leitura, em
+  litros. O significado exato do `value` (volume por intervalo ou acumulado do
+  medidor) ainda não está definido no contrato (`contrato-iot.md`, seção 8): por isso a
+  tela não soma leituras nem calcula vazão. Pendência.
+- **Sem lista de sensores por unidade** nesta tela (está em `/sensores`) e sem
+  "Exportar histórico (CSV)" — o relatório de consumo em CSV está em `/relatorios`.
+- **"Simular pico de consumo"** do protótipo era só demonstração com telemetria
+  simulada; não foi portado. Para demonstrar, use o `mock-sensors`.
+- **Estado da conexão:** a tela não mostra se o WebSocket está conectado (o cliente
+  atual não expõe esse estado). Se cair, o valor para de atualizar e a unidade passa a
+  "Sem dados recentes" depois de 15 minutos.
+- **Perfis:** a rota `/agua` vale para Operador e Gestor Ambiental (permissão
+  `water.monitor`). A HU03 cita o Operador; o Gestor também a vê, como no protótipo.
+  Com isso, a primeira tela de ambos passou a ser "Água".
 
 ### Relatórios (R09) — adapter no cliente
 

@@ -2,9 +2,12 @@ import type { SensorApi } from '../core/api/sensor-api';
 import type { WasteLotApi } from '../core/api/waste-lot-api';
 import type { WasteTypeApi } from '../core/api/waste-type-api';
 import type { WaterReadingApi } from '../core/api/water-reading-api';
+import type { WaterStatusApi } from '../core/api/water-status-api';
 import type { ReportDataSource } from '../core/reports/report-data-source';
 import { ReportsPage } from './reports/ReportsPage';
 import { SensorsPage } from './sensors/SensorsPage';
+import { WaterPage } from './water/WaterPage';
+import type { RealtimeLike } from './water/useWaterStatus';
 import { WastePage } from './waste/WastePage';
 import type { PageRegistry } from './shell/AppShell';
 
@@ -12,6 +15,9 @@ interface PageDependencies {
   wasteApi: WasteTypeApi;
   lotApi: WasteLotApi;
   reportSource: ReportDataSource;
+  waterStatusApi: WaterStatusApi;
+  createRealtime: () => RealtimeLike;
+  getToken: () => string | null;
   sensorApi: SensorApi;
   readingApi: WaterReadingApi;
 }
@@ -26,11 +32,22 @@ export function buildPages({
   wasteApi,
   lotApi,
   reportSource,
+  waterStatusApi,
+  createRealtime,
+  getToken,
   sensorApi,
   readingApi,
 }: PageDependencies): PageRegistry {
   return {
     '/residuos': <WastePage wasteApi={wasteApi} lotApi={lotApi} />,
+    '/agua': (
+      <WaterPage
+        statusApi={waterStatusApi}
+        readingApi={readingApi}
+        createRealtime={createRealtime}
+        getToken={getToken}
+      />
+    ),
     '/relatorios': <ReportsPage source={reportSource} />,
     '/sensores': <SensorsPage sensorApi={sensorApi} readingApi={readingApi} />,
   };

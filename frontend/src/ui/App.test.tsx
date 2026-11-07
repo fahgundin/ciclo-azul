@@ -5,6 +5,11 @@ import { MemoryRouter } from 'react-router-dom';
 import { makeTokenWithRoles } from '../test-utils';
 import { App } from './App';
 
+// Nenhum teste de App abre WebSocket de verdade.
+vi.mock('../core/realtime/socket-factory', () => ({
+  defaultSocketFactory: () => ({ on: vi.fn(), emit: vi.fn(), disconnect: vi.fn() }),
+}));
+
 const TOKEN_KEY = 'ciclo-azul.access_token';
 
 function renderApp(path = '/') {
@@ -48,9 +53,20 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Bem-vindo ao Ciclo Azul' })).toBeInTheDocument();
   });
 
-  it('Gestor Ambiental logado cai em Residuos (lotes) e carrega os dados com o token', async () => {
+  it('Gestor Ambiental logado cai em Agua e carrega o estado de consumo com o token', async () => {
     login(['gestor-ambiental']);
     renderApp();
+
+    expect(await screen.findByRole('heading', { name: 'Consumo de água' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Água' })).toHaveAttribute('aria-current', 'page');
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const urls = fetchMock.mock.calls.map((call) => String(call[0]));
+    expect(urls.some((url) => url.includes('/water-status'))).toBe(true);
+  });
+
+  it('Gestor Ambiental abre Residuos (lotes) e carrega os dados com o token', async () => {
+    login(['gestor-ambiental']);
+    renderApp('/residuos');
 
     expect(await screen.findByRole('heading', { name: 'Destinação de lotes' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Resíduos' })).toHaveAttribute('aria-current', 'page');
@@ -63,12 +79,18 @@ describe('App', () => {
   it('o retorno do login (/callback) com sessao ativa abre a primeira tela', async () => {
     login(['gestor-ambiental']);
     renderApp('/callback');
-    expect(await screen.findByRole('heading', { name: 'Destinação de lotes' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Consumo de água' })).toBeInTheDocument();
   });
 
-  it('Operador logado cai em Sensores e carrega os sensores com o token', async () => {
+  it('Operador logado cai em Agua; Sensores carrega os sensores com o token', async () => {
     login(['operador']);
     renderApp();
+    expect(await screen.findByRole('heading', { name: 'Consumo de água' })).toBeInTheDocument();
+  });
+
+  it('Operador abre Sensores e carrega os sensores com o token', async () => {
+    login(['operador']);
+    renderApp('/sensores');
 
     expect(await screen.findByRole('heading', { name: 'Sensores IoT' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Sensores' })).toHaveAttribute('aria-current', 'page');
@@ -87,7 +109,7 @@ describe('App', () => {
     login(['gestor-ambiental']);
     renderApp();
     const user = userEvent.setup();
-    await screen.findByRole('heading', { name: 'Destinação de lotes' });
+    await screen.findByRole('heading', { name: 'Consumo de água' });
 
     await user.click(screen.getByRole('button', { name: 'Minha conta' }));
     await user.click(screen.getByRole('button', { name: 'Sair' }));
