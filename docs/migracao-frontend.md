@@ -37,7 +37,7 @@
 | Tipos de resíduo (R07) | `/residuos` | #25 | Entregue (antes da migração) |
 | Sensores e leitura manual (R04) | `/sensores` | #39 | Entregue, sobre a API real (com as lacunas abaixo) |
 | Água em tempo real (R05) | `/agua` | #40 | A fazer |
-| Lotes e destinação (R06) | `/residuos` | #41 | A fazer |
+| Lotes e destinação (R06) | `/residuos` | #41 | Entregue, sobre a API real (com as lacunas abaixo) |
 | Relatórios (R09) | `/relatorios` | #42 | A fazer |
 | Limites e alertas (R03/R08) | `/alertas` | #43 | A fazer |
 | Reuso (R02) | `/insights` | #44 | A fazer |
@@ -129,7 +129,8 @@ Efeitos na tela de sensores (#39), que difere do protótipo nestes pontos:
 
 O backend do R06 cobre o registro da destinação (com comprovante obrigatório) e a
 listagem. Só os critérios do #8 foram implementados; o restante fica pendente
-(AGENTS §7) e a tela (#41) deve aplicá-lo, ou aguardar decisão:
+(AGENTS §7). A tela (#41) usa a API real e **não** aplica no frontend as regras que
+o backend não tem, para não inventar regra de negócio:
 
 - **Licença válida na data:** o backend só exige que a licença seja *informada*. Não
   há cadastro de empresas receptoras nem de licenças com validade, então a regra
@@ -143,6 +144,26 @@ listagem. Só os critérios do #8 foram implementados; o restante fica pendente
   precisa ser definida com o negócio.
 - **Lotes sem destinação:** registrar a destinação cria o lote já "Destinado". Não
   existe lote pendente, que o R08 (alerta de prazo) vai exigir.
+
+Efeitos na tela de resíduos (#41), que difere do protótipo nestes pontos:
+
+- **Abas:** `/residuos` tem as abas "Destinação de lotes" (R06, abre por padrão) e
+  "Tipos de resíduo" (R07, tela que já existia).
+- **Só lotes já destinados:** a tela lista lotes com destinação registrada e a etiqueta
+  "Destinado". Não há "Novo lote", lote pendente, filtro por situação, prazo para
+  destinar nem "Aguardando 2ª confirmação".
+- **Formulário de destinação:** tipo de resíduo, local, empresa receptora (texto
+  livre), licença (texto livre), data (não futura), quantidade e comprovante. O
+  protótipo escolhia a empresa de uma lista com licença e validade; a API não tem
+  cadastro de empresas, então não há a regra "licença válida na data".
+- **Comprovante:** campo de texto (nº do MTR, nome do arquivo ou link), obrigatório,
+  com a mensagem exata do critério de aceitação. Não há envio de arquivo.
+- **Quantidade:** sem unidade de medida (o protótipo tinha kg, L, un).
+- **Sem retificação** da destinação (depende da trilha de auditoria, RNF02) e sem
+  confirmação por segundo gestor.
+- **Perfis:** o backend deixa a Diretoria *consultar* os lotes (`GET /waste-lots`), mas
+  a rota `/residuos` segue restrita ao Gestor Ambiental (ver "Leitura de tipos de
+  resíduo pela Diretoria", abaixo).
 
 ### Classificação dos tipos de resíduo
 

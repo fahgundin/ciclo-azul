@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { SensorApi } from '../core/api/sensor-api';
+import { WasteLotApi } from '../core/api/waste-lot-api';
 import { WasteTypeApi } from '../core/api/waste-type-api';
 import { WaterReadingApi } from '../core/api/water-reading-api';
 import { userFromToken } from '../core/auth/token';
@@ -31,11 +32,12 @@ function AppContent(): JSX.Element {
   const flash = useFlash();
   // O api le o token "ao vivo" via closure sobre auth.token.
   const api = useMemo(() => new WasteTypeApi(apiUrl, () => auth.token), [auth.token]);
+  const lotApi = useMemo(() => new WasteLotApi(apiUrl, () => auth.token), [auth.token]);
   const sensorApi = useMemo(() => new SensorApi(apiUrl, () => auth.token), [auth.token]);
   const readingApi = useMemo(() => new WaterReadingApi(apiUrl, () => auth.token), [auth.token]);
   const pages = useMemo(
-    () => buildPages({ wasteApi: api, sensorApi, readingApi }),
-    [api, sensorApi, readingApi],
+    () => buildPages({ wasteApi: api, lotApi, sensorApi, readingApi }),
+    [api, lotApi, sensorApi, readingApi],
   );
   const user = useMemo(() => userFromToken(auth.token), [auth.token]);
 

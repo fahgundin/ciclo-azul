@@ -1,4 +1,5 @@
 import { MANUAL_READING_MAX_AGE_DAYS } from '@ciclo-azul/contracts';
+import type { FieldErrors } from '../forms';
 
 /**
  * Validacoes de formulario do R04 (core/ — agnostico de UI).
@@ -8,7 +9,7 @@ import { MANUAL_READING_MAX_AGE_DAYS } from '@ciclo-azul/contracts';
  * volta desnecessaria. Ver backend: water-monitoring/domain/{sensor,manual-reading}.ts.
  */
 
-export type FieldErrors<K extends string> = Partial<Record<K, string>>;
+export type { FieldErrors };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

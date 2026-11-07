@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatDateTime, formatDateUtc, formatLiters, initials } from './format';
+import { formatDateTime, formatDateUtc, formatLiters, formatNumber, initials } from './format';
 
 describe('initials', () => {
   it('usa a primeira letra de ate dois nomes, em maiuscula', () => {
@@ -45,5 +45,13 @@ describe('formatDateTime', () => {
     expect(formatDateTime('2026-11-05T15:30:00.000Z')).toMatch(
       /^\d{2}\/\d{2}\/2026,? \d{2}:\d{2}$/,
     );
+  });
+});
+
+describe('formatNumber', () => {
+  it('usa separadores pt-BR e ate duas casas decimais', () => {
+    expect(formatNumber(1234)).toBe('1.234');
+    expect(formatNumber(90.5)).toBe('90,5');
+    expect(formatNumber(10.12345)).toBe('10,12');
   });
 });
