@@ -42,7 +42,7 @@
 | Limites e alertas (R03/R08) | `/alertas` | #43 | Entregue com **adapters em memória** (sem backend) |
 | Reuso (R02) | `/insights` | #44 | Entregue com **adapter em memória** e estimativas de demonstração |
 | Painel de KPIs (R10) | `/painel` | #45 | Entregue, **calculado no navegador** (sem endpoint no backend) |
-| Usuários (R01) | `/usuarios` | #46 | A fazer |
+| Usuários (R01) | `/usuarios` | #46 | Entregue com **adapter em memória** (cadastro de demonstração; contas reais no Keycloak) |
 | Auditoria (RNF02) | `/auditoria` | #47 | A fazer |
 
 Telas sem página registrada não aparecem no menu. Perfil sem nenhuma tela
@@ -199,6 +199,43 @@ Regras e limites conhecidos:
   em `/alertas`. O consumo do dia pressupõe leituras incrementais (mesma pendência de R03).
 - **Sem atualização em tempo real**: os números são os da abertura da tela (ou de "Tentar
   de novo" após erro). A falha na carga de lotes não derruba os demais indicadores.
+
+### Usuários e perfis (R01) — adapter em memória, até onde a tela vai
+
+**Anotação: esta tela NÃO cria contas nem altera perfis de verdade.** O R01 (#11) está
+aberto e o backend não tem endpoint de usuários. Quem faz login, a senha e as **roles**
+(`administrador`, `gestor-ambiental`, `operador`, `diretoria`) vivem no **Keycloak**
+(`infra/keycloak/realm-ciclo-azul.json`). A tela `/usuarios` (só Administrador) usa um
+**cadastro de demonstração em memória** (`InMemoryUserDirectory`, semeado do protótipo),
+**por login**: some ao sair e ao recarregar, e criar ou editar ali **não** cria usuário
+nem muda o perfil no Keycloak. A tela exibe essa observação. Quando houver endpoint (ou o
+backend usar a Admin API do Keycloak), troca-se só o adapter da porta `UserDirectory`.
+
+| O quê | Situação |
+|---|---|
+| Listar usuários, perfil, status e unidades do Operador | **Adapter em memória** (dados de demonstração) |
+| Novo usuário (nome, e-mail, nível de acesso, unidades) | **Adapter em memória**; não cria conta no Keycloak |
+| Editar nível de acesso, status (ativo/inativo) e unidades | **Adapter em memória**; não altera roles no Keycloak |
+| Matriz de permissões por perfil | **Somente leitura**, de `core/auth/permissions.ts` (o que a interface mostra; a regra definitiva é do backend) |
+| Negar acesso a quem não tem permissão (HU01, cenário 2) | **Implementado no shell**: rota conhecida fora do perfil mostra "Você não tem permissão para acessar esta funcionalidade" (antes redirecionava) |
+
+Regras (do protótipo e da HU01):
+
+- **E-mail único** e válido; nome obrigatório. Nome e e-mail **não** são editáveis (são do
+  cadastro do Keycloak).
+- **Operador precisa de ao menos uma unidade**; para os outros perfis as unidades são
+  descartadas.
+- **Ninguém altera o próprio nível de acesso nem desativa a própria conta.** O "próprio"
+  é reconhecido pelo **e-mail** do token; se o token não tiver e-mail, a regra não se aplica.
+- As **unidades** oferecidas vêm de `GET /water-status` (não há cadastro de unidades) mais
+  as já atribuídas. Elas só descrevem a responsabilidade: o backend **não** restringe
+  alertas nem leituras por unidade (a RN03 do protótipo continua sem base; ver "Limites e
+  alertas").
+
+Pendências para fechar o R01 de verdade (AGENTS §7): endpoint de usuários no backend
+(ou integração com a Admin API do Keycloak) com `@Roles(ADMINISTRADOR)`; definir quem gera a
+senha inicial/convite; vínculo operador-unidade persistido; **trilha de auditoria** das
+mudanças (RNF02, #47 — a tela de auditoria também é sem backend).
 
 ### Oportunidades de reuso (R02) — adapter em memória e estimativas de demonstração
 

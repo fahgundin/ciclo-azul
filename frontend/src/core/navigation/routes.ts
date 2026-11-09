@@ -58,6 +58,17 @@ export function routesFor(roles: readonly AppRole[]): AppRoute[] {
   return APP_ROUTES.filter((route) => route.permission === null || can(roles, route.permission));
 }
 
+/**
+ * Rotas conhecidas que o conjunto de perfis NAO pode acessar. Quem digita o caminho de
+ * uma delas recebe `ACCESS_DENIED_MESSAGE` (HU01, cenario 2), em vez de ser redirecionado.
+ */
+export function forbiddenRoutes(roles: readonly AppRole[]): AppRoute[] {
+  return APP_ROUTES.filter((route) => !routesFor(roles).includes(route));
+}
+
+/** Mensagem exibida ao tentar abrir uma funcionalidade sem permissao (HU01). */
+export const ACCESS_DENIED_MESSAGE = 'Você não tem permissão para acessar esta funcionalidade';
+
 /** O conjunto de perfis pode acessar este caminho? Caminhos desconhecidos: nao. */
 export function canAccessRoute(roles: readonly AppRole[], path: string): boolean {
   return routesFor(roles).some((route) => route.path === path);

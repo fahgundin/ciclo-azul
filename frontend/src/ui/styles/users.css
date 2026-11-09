@@ -1,0 +1,75 @@
+/* Gestao de usuarios: linha de usuario, grupo de unidades e matriz de permissoes. */
+
+.user-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.user-row__tags {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.user-row__tags .tag {
+  margin-top: 0.25rem;
+}
+
+.units-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.units-field legend {
+  padding: 0;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.matrix th,
+.matrix td {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--color-primary-100);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.matrix th[scope='row'],
+.matrix thead th:first-child {
+  text-align: left;
+}
+
+.matrix caption {
+  padding: 0.5rem;
+  text-align: left;
+}

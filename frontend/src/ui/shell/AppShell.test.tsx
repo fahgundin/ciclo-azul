@@ -81,15 +81,26 @@ describe('AppShell — navegacao por perfil', () => {
 });
 
 describe('AppShell — guarda de rotas', () => {
-  it('rota de outro perfil volta para a primeira tela permitida', () => {
+  // HU01, cenario "Impedir acesso a funcionalidade nao autorizada"
+  it('Operador que abre a gestao de usuarios recebe a mensagem de acesso negado', () => {
     renderShell(userWith([APP_ROLES.OPERADOR]), '/usuarios');
     expect(screen.queryByText('Página de usuários')).not.toBeInTheDocument();
-    expect(screen.getByText('Página de água')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Você não tem permissão para acessar esta funcionalidade',
+    );
+    expect(navLinks()).toEqual(['Água']);
   });
 
-  it('rota existente mas sem permissao nao renderiza a pagina', () => {
+  it('rota existente mas sem permissao nao renderiza a pagina e nega o acesso', () => {
     renderShell(userWith([APP_ROLES.OPERADOR]), '/residuos');
     expect(screen.queryByText('Página de resíduos')).not.toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Você não tem permissão');
+  });
+
+  it('Administrador abre a gestao de usuarios normalmente', () => {
+    renderShell(userWith([APP_ROLES.ADMINISTRADOR]), '/usuarios');
+    expect(screen.getByText('Página de usuários')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('caminho desconhecido (ex.: /callback) cai na pagina inicial', () => {
