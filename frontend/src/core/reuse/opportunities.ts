@@ -56,6 +56,8 @@ export interface ReuseAnalysis {
   insufficient: string[];
   /** Unidades com historico, mas sem leitura recente (a ultima e antiga demais). */
   stale: string[];
+  /** Consumo mensal estimado das unidades analisadas (soma dos consumos-base), em litros. */
+  monthlyConsumptionLiters: number;
 }
 
 interface CatalogEntry {
@@ -205,6 +207,7 @@ export function analyzeReuse(units: readonly UnitHistory[], now: Date): ReuseAna
     opportunities,
     insufficient: insufficient.sort((a, b) => a.localeCompare(b, 'pt-BR')),
     stale: stale.sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    monthlyConsumptionLiters: Math.round(bases.reduce((sum, base) => sum + base.monthly, 0)),
   };
 }
 

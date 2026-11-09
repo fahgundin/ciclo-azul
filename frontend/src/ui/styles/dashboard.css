@@ -1,0 +1,100 @@
+/* Painel de KPIs: cartoes de indicador e grafico de barras do consumo diario. */
+
+.kpis {
+  display: grid;
+  gap: var(--space-1);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: var(--space-2);
+}
+
+.kpi h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.kpi__value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.kpi__value small {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.kpi__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.kpi .tag {
+  margin-top: 0;
+}
+
+.daychart {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.35rem;
+  height: 9rem;
+  margin: 0;
+  padding: var(--space-2) var(--space-2) 0;
+  list-style: none;
+}
+
+.daychart > li {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  min-width: 0;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.daychart__bar {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--color-primary-500);
+}
+
+.daychart__bar--over {
+  background: var(--color-danger);
+}
+
+.daychart__bar--partial {
+  opacity: 0.6;
+}
+
+.daychart__value {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.daychart__day {
+  font-weight: 600;
+  color: var(--color-text);
+}
