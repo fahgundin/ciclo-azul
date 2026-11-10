@@ -1,0 +1,29 @@
+/* Auditoria: filtros em grade e cabecalho de cada registro. */
+
+.audit-filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-1);
+}
+
+.audit-filters .field:nth-child(-n + 2) {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 640px) {
+  .audit-filters {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .audit-filters .field:nth-child(-n + 2) {
+    grid-column: auto;
+  }
+}
+
+.audit-entry__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
