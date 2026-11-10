@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { APP_ROUTES, canAccessRoute, routesFor } from './routes';
+import {
+  ACCESS_DENIED_MESSAGE,
+  APP_ROUTES,
+  canAccessRoute,
+  forbiddenRoutes,
+  routesFor,
+} from './routes';
 import { APP_ROLES } from '../auth/roles';
 
 const paths = (roles: Parameters<typeof routesFor>[0]) => routesFor(roles).map((r) => r.path);
@@ -60,5 +66,29 @@ describe('APP_ROUTES', () => {
   it('nao repete caminhos', () => {
     const all = APP_ROUTES.map((r) => r.path);
     expect(new Set(all).size).toBe(all.length);
+  });
+});
+
+describe('forbiddenRoutes', () => {
+  it('Operador nao acessa usuarios, auditoria, residuos, reuso nem relatorios', () => {
+    expect(forbiddenRoutes([APP_ROLES.OPERADOR]).map((r) => r.path)).toEqual([
+      '/residuos',
+      '/insights',
+      '/relatorios',
+      '/usuarios',
+      '/auditoria',
+    ]);
+  });
+
+  it('e o complemento exato das rotas permitidas', () => {
+    for (const role of Object.values(APP_ROLES)) {
+      const allowed = routesFor([role]).map((r) => r.path);
+      const denied = forbiddenRoutes([role]).map((r) => r.path);
+      expect([...allowed, ...denied].sort()).toEqual(APP_ROUTES.map((r) => r.path).sort());
+    }
+  });
+
+  it('a mensagem e a da HU01', () => {
+    expect(ACCESS_DENIED_MESSAGE).toBe('Você não tem permissão para acessar esta funcionalidade');
   });
 });
