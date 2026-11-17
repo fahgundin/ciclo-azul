@@ -8,6 +8,7 @@ import type { LimitStore } from '../core/limits/limits';
 import type { PendingLotStore } from '../core/waste/pending-lot';
 import type { ReportDataSource } from '../core/reports/report-data-source';
 import { AlertsPage } from './alerts/AlertsPage';
+import { DashboardPage } from './dashboard/DashboardPage';
 import { ReusePage } from './reuse/ReusePage';
 import { ReportsPage } from './reports/ReportsPage';
 import { SensorsPage } from './sensors/SensorsPage';
@@ -50,6 +51,16 @@ export function buildPages({
   readingApi,
 }: PageDependencies): PageRegistry {
   return {
+    '/painel': (
+      <DashboardPage
+        statusApi={waterStatusApi}
+        readingApi={readingApi}
+        lotApi={lotApi}
+        limitStore={limitStore}
+        pendingLotStore={pendingLotStore}
+        appliedStore={appliedStore}
+      />
+    ),
     '/residuos': <WastePage wasteApi={wasteApi} lotApi={lotApi} pendingStore={pendingLotStore} />,
     '/agua': (
       <WaterPage

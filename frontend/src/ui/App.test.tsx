@@ -53,9 +53,21 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Bem-vindo ao Ciclo Azul' })).toBeInTheDocument();
   });
 
-  it('Gestor Ambiental logado cai em Agua e carrega o estado de consumo com o token', async () => {
+  it('Gestor Ambiental logado cai no Painel e carrega consumo e lotes com o token', async () => {
     login(['gestor-ambiental']);
     renderApp();
+
+    expect(await screen.findByRole('heading', { name: 'Painel, Marina' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Painel' })).toHaveAttribute('aria-current', 'page');
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const urls = fetchMock.mock.calls.map((call) => String(call[0]));
+    expect(urls.some((url) => url.includes('/water-status'))).toBe(true);
+    expect(urls.some((url) => url.includes('/waste-lots'))).toBe(true);
+  });
+
+  it('Gestor Ambiental abre Agua e carrega o estado de consumo com o token', async () => {
+    login(['gestor-ambiental']);
+    renderApp('/agua');
 
     expect(await screen.findByRole('heading', { name: 'Consumo de água' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Água' })).toHaveAttribute('aria-current', 'page');
@@ -79,13 +91,16 @@ describe('App', () => {
   it('o retorno do login (/callback) com sessao ativa abre a primeira tela', async () => {
     login(['gestor-ambiental']);
     renderApp('/callback');
-    expect(await screen.findByRole('heading', { name: 'Consumo de água' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Painel, Marina' })).toBeInTheDocument();
   });
 
-  it('Operador logado cai em Agua; Sensores carrega os sensores com o token', async () => {
+  it('Operador logado cai no Painel, sem o indicador de residuos (o backend recusa os lotes)', async () => {
     login(['operador']);
     renderApp();
-    expect(await screen.findByRole('heading', { name: 'Consumo de água' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Painel, Marina' })).toBeInTheDocument();
+    await screen.findByRole('article', { name: 'Consumo de água hoje' });
+    const urls = fetchMock.mock.calls.map((call) => String(call[0]));
+    expect(urls.some((url) => url.includes('/waste-lots'))).toBe(false);
   });
 
   it('Operador abre Sensores e carrega os sensores com o token', async () => {
@@ -98,18 +113,21 @@ describe('App', () => {
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/sensors');
   });
 
-  it('perfil sem telas prontas (Diretoria) ve "Em construcao" e nao chama a API', () => {
+  it('Diretoria ve so o Painel, com consumo e lotes destinados', async () => {
     login(['diretoria']);
     renderApp();
-    expect(screen.getByRole('heading', { name: 'Em construção' })).toBeInTheDocument();
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(await screen.findByRole('heading', { name: 'Painel, Marina' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+    await screen.findByRole('article', { name: 'Resíduos destinados corretamente' });
+    const urls = fetchMock.mock.calls.map((call) => String(call[0]));
+    expect(urls.some((url) => url.includes('/waste-lots'))).toBe(true);
   });
 
   it('Sair encerra a sessao, volta ao convite e avisa', async () => {
     login(['gestor-ambiental']);
     renderApp();
     const user = userEvent.setup();
-    await screen.findByRole('heading', { name: 'Consumo de água' });
+    await screen.findByRole('heading', { name: 'Painel, Marina' });
 
     await user.click(screen.getByRole('button', { name: 'Minha conta' }));
     await user.click(screen.getByRole('button', { name: 'Sair' }));

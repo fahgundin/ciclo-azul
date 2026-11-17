@@ -41,7 +41,7 @@
 | Relatórios (R09) | `/relatorios` | #42 | Entregue, **gerado no navegador** (sem endpoint no backend) |
 | Limites e alertas (R03/R08) | `/alertas` | #43 | Entregue com **adapters em memória** (sem backend) |
 | Reuso (R02) | `/insights` | #44 | Entregue com **adapter em memória** e estimativas de demonstração |
-| Painel de KPIs (R10) | `/painel` | #45 | A fazer |
+| Painel de KPIs (R10) | `/painel` | #45 | Entregue, **calculado no navegador** (sem endpoint no backend) |
 | Usuários (R01) | `/usuarios` | #46 | A fazer |
 | Auditoria (RNF02) | `/auditoria` | #47 | A fazer |
 
@@ -164,6 +164,41 @@ Efeitos na tela de resíduos (#41), que difere do protótipo nestes pontos:
 - **Perfis:** o backend deixa a Diretoria *consultar* os lotes (`GET /waste-lots`), mas
   a rota `/residuos` segue restrita ao Gestor Ambiental (ver "Leitura de tipos de
   resíduo pela Diretoria", abaixo).
+
+### Painel de KPIs (R10) — calculado no navegador
+
+**Anotação: esta tela NÃO usa endpoint de KPIs.** O R10 (#14) está aberto. `/painel` é a
+primeira tela de **todos** os perfis (substitui o "Em construção" da Diretoria). Os
+indicadores saem de `core/kpis/kpis.ts` sobre dados reais e adapters em memória; quando
+houver endpoint, a página passa a chamá-lo.
+
+| KPI | De onde vem |
+|---|---|
+| Consumo de água hoje | **API real** (`/water-status`, `/water-readings`): soma das leituras do dia (UTC) |
+| Limite geral e nível (ok / perto / excedido) | **Adapter em memória** (`LimitStore`); nível pela mesma regra dos alertas (`limitLevel`) |
+| Reuso de água (%) e água economizada (L/mês) | **Estimativas de demonstração** (catálogo de R02) das oportunidades **marcadas como aplicadas neste navegador** |
+| Resíduos destinados (%) | **API real** (`/waste-lots`) + **adapter em memória** dos lotes sem destinação (R08) |
+| Últimos 7 dias | **API real**: consumo diário em litros, com marcação de dia acima do limite geral |
+
+Regras e limites conhecidos:
+
+- **Reuso (%)** = economia estimada das oportunidades de *Reuso* aplicadas ÷ consumo
+  mensal estimado das unidades com histórico suficiente. Oportunidades de *Redução* (ex.:
+  ciclos de concentração) entram em "água economizada", mas não em reuso. Nada é medido.
+- **Resíduos destinados (%)** = lotes destinados ÷ (destinados + sem destinação). O backend
+  só conhece lotes destinados, então o denominador depende do adapter em memória, que é
+  **por login**: o percentual só é calculado para o **Gestor** (que cadastra os lotes
+  pendentes). Para a **Diretoria** a tela mostra "—" e o total de destinados, porque sem os
+  pendentes o percentual seria sempre 100%. Lotes com prazo vencido são contados à parte.
+- **Limite e oportunidades aplicadas** também são por login/navegador: a Diretoria **não vê
+  o limite que o Gestor definiu** (a tela diz "sem limite geral definido neste navegador") e
+  vê 0% de reuso e 0 L/mês economizados. Isso só se resolve com backend para R02/R03/R08.
+- **Indicador de resíduos** só aparece para quem o backend deixa consultar `/waste-lots`
+  (Gestor e Diretoria); Operador e Administrador não o veem.
+- **Sem "Sensores online"** e sem lista de alertas (o protótipo tinha): os alertas estão
+  em `/alertas`. O consumo do dia pressupõe leituras incrementais (mesma pendência de R03).
+- **Sem atualização em tempo real**: os números são os da abertura da tela (ou de "Tentar
+  de novo" após erro). A falha na carga de lotes não derruba os demais indicadores.
 
 ### Oportunidades de reuso (R02) — adapter em memória e estimativas de demonstração
 

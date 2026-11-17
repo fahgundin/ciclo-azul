@@ -178,3 +178,18 @@ describe('InMemoryAppliedStore / sumSavings', () => {
     expect(sumSavings([])).toBe(0);
   });
 });
+
+describe('analyzeReuse — consumo mensal estimado', () => {
+  it('soma o consumo mensal das unidades analisadas (10.000 L/dia x 30 = 300.000 L/mes por unidade)', () => {
+    const { monthlyConsumptionLiters } = analyzeReuse(
+      [unit('dc-sp1', 10, 10000), unit('dc-cps', 10, 10000)],
+      NOW,
+    );
+    expect(monthlyConsumptionLiters).toBe(600000);
+  });
+
+  it('ignora unidades sem historico suficiente e e zero sem nenhuma analisavel', () => {
+    expect(analyzeReuse([unit('dc-sp1', 1, 10000)], NOW).monthlyConsumptionLiters).toBe(0);
+    expect(analyzeReuse([], NOW).monthlyConsumptionLiters).toBe(0);
+  });
+});
