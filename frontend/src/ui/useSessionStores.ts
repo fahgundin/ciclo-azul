@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { InMemoryLimitStore, type LimitStore } from '../core/limits/limits';
 import { InMemoryAppliedStore, type AppliedStore } from '../core/reuse/opportunities';
+import { InMemoryAuditLog, seedAuditEntries, type AuditLog } from '../core/audit/audit';
 import { InMemoryUserDirectory, type UserDirectory } from '../core/users/users';
 import { InMemoryPendingLotStore, type PendingLotStore } from '../core/waste/pending-lot';
 
-/** ADAPTERS EM MEMORIA (R01, R02, R03, R08): um conjunto por sessao de login. */
+/** ADAPTERS EM MEMORIA (R01, R02, R03, R08, RNF02): um conjunto por sessao de login. */
 export interface SessionStores {
   limitStore: LimitStore;
   pendingLotStore: PendingLotStore;
   appliedStore: AppliedStore;
   userDirectory: UserDirectory;
+  auditLog: AuditLog;
 }
 
 function createSessionStores(): SessionStores {
@@ -18,6 +20,7 @@ function createSessionStores(): SessionStores {
     pendingLotStore: new InMemoryPendingLotStore(),
     appliedStore: new InMemoryAppliedStore(),
     userDirectory: new InMemoryUserDirectory(),
+    auditLog: new InMemoryAuditLog(seedAuditEntries(new Date())),
   };
 }
 

@@ -43,7 +43,7 @@
 | Reuso (R02) | `/insights` | #44 | Entregue com **adapter em memória** e estimativas de demonstração |
 | Painel de KPIs (R10) | `/painel` | #45 | Entregue, **calculado no navegador** (sem endpoint no backend) |
 | Usuários (R01) | `/usuarios` | #46 | Entregue com **adapter em memória** (cadastro de demonstração; contas reais no Keycloak) |
-| Auditoria (RNF02) | `/auditoria` | #47 | A fazer |
+| Auditoria (RNF02) | `/auditoria` | #47 | Entregue com **adapter em memória** e **dados de demonstração** |
 
 Telas sem página registrada não aparecem no menu. Perfil sem nenhuma tela
 disponível vê "Em construção".
@@ -236,6 +236,31 @@ Pendências para fechar o R01 de verdade (AGENTS §7): endpoint de usuários no 
 (ou integração com a Admin API do Keycloak) com `@Roles(ADMINISTRADOR)`; definir quem gera a
 senha inicial/convite; vínculo operador-unidade persistido; **trilha de auditoria** das
 mudanças (RNF02, #47 — a tela de auditoria também é sem backend).
+
+### Auditoria (RNF02) — adapter em memória e dados de demonstração
+
+**Anotação: esta tela NÃO mostra a história real do sistema.** O RNF02 (histórico sem
+exclusão) não tem backend, e as telas migradas **não registram** suas ações. `/auditoria`
+(só Administrador) lê um `AuditLog` em memória (`InMemoryAuditLog`) semeado com **registros
+de demonstração** (`seedAuditEntries`, inspirados no protótipo e relativos à data atual):
+eles não correspondem a nada que alguém tenha feito. A tela e os arquivos exportados dizem
+isso.
+
+- **Somente leitura:** a porta `AuditLog` só tem `list()`; a tela não oferece editar,
+  excluir nem retificar. A imutabilidade de verdade exige tabela somente de inserção no
+  backend.
+- **Listagem:** ação, autor, data/hora e detalhe, do mais recente ao mais antigo.
+- **Filtros:** ação, usuário e período (de/até, dias inclusivos em UTC); combináveis.
+- **Exportação:** CSV (`;`, BOM, proteção contra fórmula, mesmo padrão dos relatórios) e
+  PDF pela impressão do navegador. Exporta **só o que está listado** (respeita os filtros)
+  e leva o aviso de dados de demonstração. Não é prova de auditoria.
+- **Fora do escopo desta tela:** registrar ações das outras telas (acesso, limites, leituras,
+  destinação, relatórios, usuários...) e a **retificação com justificativa** que preserva o
+  valor original (pendência herdada do R04/R06). Tudo isso depende do endpoint de auditoria.
+
+Pendências (AGENTS §7): endpoint de auditoria no backend (inserção feita pelo servidor a cada
+ação, nunca pelo cliente), com `@Roles(ADMINISTRADOR)`; lista de ações auditáveis e prazo de
+retenção definidos com o negócio.
 
 ### Oportunidades de reuso (R02) — adapter em memória e estimativas de demonstração
 
