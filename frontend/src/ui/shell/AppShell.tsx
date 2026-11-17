@@ -3,7 +3,12 @@ import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { ROLE_LABELS } from '../../core/auth/roles';
 import type { TokenUser } from '../../core/auth/token';
 import { initials } from '../../core/format';
-import { routesFor, type AppRoute } from '../../core/navigation/routes';
+import {
+  ACCESS_DENIED_MESSAGE,
+  forbiddenRoutes,
+  routesFor,
+  type AppRoute,
+} from '../../core/navigation/routes';
 import { Dialog } from '../components/Dialog';
 import { Icon } from '../components/Icon';
 import './shell.css';
@@ -35,6 +40,7 @@ export function AppShell({ user, pages, onLogout }: AppShellProps): JSX.Element 
     () => routesFor(user.roles).filter((route) => route.path in pages),
     [user.roles, pages],
   );
+  const deniedRoutes = useMemo(() => forbiddenRoutes(user.roles), [user.roles]);
   const current = navRoutes.find((route) => route.path === pathname);
 
   useEffect(() => {
@@ -61,6 +67,9 @@ export function AppShell({ user, pages, onLogout }: AppShellProps): JSX.Element 
         <Routes>
           {navRoutes.map((route) => (
             <Route key={route.path} path={route.path} element={pages[route.path]} />
+          ))}
+          {deniedRoutes.map((route) => (
+            <Route key={route.path} path={route.path} element={<AccessDenied />} />
           ))}
           <Route path="/" element={<Home routes={navRoutes} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -108,6 +117,18 @@ export function AppShell({ user, pages, onLogout }: AppShellProps): JSX.Element 
         </button>
       </Dialog>
     </div>
+  );
+}
+
+/** Funcionalidade existente, mas fora do perfil de quem a abriu (HU01, cenario 2). */
+function AccessDenied(): JSX.Element {
+  return (
+    <section className="empty-state">
+      <div className="glass empty-state__card" role="alert">
+        <h1>Acesso negado</h1>
+        <p>{ACCESS_DENIED_MESSAGE}</p>
+      </div>
+    </section>
   );
 }
 

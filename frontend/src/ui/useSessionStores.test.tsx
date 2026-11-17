@@ -23,6 +23,12 @@ describe('useSessionStores', () => {
     const first = result.current;
     first.limitStore.save({ general: 500, units: {} });
     first.appliedStore.apply('purge-dc-sp1');
+    first.userDirectory.create({
+      name: 'Novo Nome',
+      email: 'novo@ciclo.azul',
+      role: 'diretoria',
+      unitIds: [],
+    });
 
     rerender({ key: null });
     rerender({ key: 'marina@ciclo.azul' });
@@ -30,6 +36,9 @@ describe('useSessionStores', () => {
     expect(result.current).not.toBe(first);
     expect(result.current.limitStore.get().general).toBeNull();
     expect(result.current.appliedStore.has('purge-dc-sp1')).toBe(false);
+    expect(result.current.userDirectory.list().some((u) => u.email === 'novo@ciclo.azul')).toBe(
+      false,
+    );
   });
 
   it('recria os adapters ao trocar de usuario', () => {

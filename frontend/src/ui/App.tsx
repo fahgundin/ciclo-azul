@@ -45,9 +45,9 @@ function AppContent(): JSX.Element {
   const createRealtime = useCallback(() => new RealtimeClient(apiUrl, defaultSocketFactory), []);
   const getToken = useCallback(() => auth.token, [auth.token]);
   const user = useMemo(() => userFromToken(auth.token), [auth.token]);
-  // ADAPTERS EM MEMORIA (R02/R03/R08): um conjunto por SESSAO (quem esta logado); somem
+  // ADAPTERS EM MEMORIA (R01/R02/R03/R08): um conjunto por SESSAO (quem esta logado); somem
   // ao sair e ao recarregar, mas nao quando o token e renovado.
-  const { limitStore, pendingLotStore, appliedStore } = useSessionStores(
+  const { limitStore, pendingLotStore, appliedStore, userDirectory } = useSessionStores(
     user ? (user.email ?? user.name) : null,
   );
   const reportSource = useMemo(
@@ -63,6 +63,7 @@ function AppContent(): JSX.Element {
         limitStore,
         appliedStore,
         pendingLotStore,
+        userDirectory,
         waterStatusApi,
         createRealtime,
         getToken,
@@ -76,6 +77,7 @@ function AppContent(): JSX.Element {
       limitStore,
       appliedStore,
       pendingLotStore,
+      userDirectory,
       waterStatusApi,
       createRealtime,
       getToken,
